@@ -1,0 +1,17 @@
+export const theme = {
+  navy:       '#0B1F3A',
+  navyLight:  '#1A3358',
+  amber:      '#C8860A',
+  amberLight: '#E49B18',
+  bg:         '#F5F3EE',
+  card:       '#FFFFFF',
+  border:     '#DDD9CF',
+  text:       '#0B1F3A',
+  muted:      '#7A7060',
+  success:    '#1E7A4A',
+  danger:     '#B83232',
+  tripBg:     '#E8EFFE',
+  tripText:   '#2151B8',
+  fuelBg:     '#FEF3C7',
+  fuelText:   '#92400E',
+};

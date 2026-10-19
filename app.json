@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "FuelLog",
+    "slug": "fuellog",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#F5F3EE",
+    "splash": {
+      "backgroundColor": "#0B1F3A"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.yourcompany.fuellog"
+    },
+    "android": {
+      "package": "com.yourcompany.fuellog",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B1F3A"
+      }
+    }
+  }
+}
