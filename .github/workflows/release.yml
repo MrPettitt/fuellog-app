@@ -1,0 +1,106 @@
+# Publishes a GitHub Release whenever the version in package.json changes on main.
+#
+#   1. Bump "version" in package.json and app.json (and expo.android.versionCode /
+#      expo.ios.buildNumber), add a "## x.y.z - date" section to CHANGELOG.md.
+#   2. Merge to main.
+#   3. This workflow runs the tests, tags vX.Y.Z, creates the release with the
+#      CHANGELOG section as its notes, then builds an Android APK and attaches it.
+#
+# Nothing happens when the tag for the current version already exists, so ordinary
+# commits to main are safe. "Run workflow" (workflow_dispatch) can re-run it by hand.
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Check for a new version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      publish: ${{ steps.v.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: v
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" > /dev/null; then
+            echo "v$VERSION is already released; nothing to do."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "v$VERSION is not released yet."
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  release:
+    name: Test and publish release
+    needs: check
+    if: needs.check.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Unit tests
+        run: npm test
+      - name: Release notes from CHANGELOG.md
+        run: |
+          awk -v v="$VERSION" '/^## /{p = ($2 == v)} p' CHANGELOG.md | tail -n +2 > notes.md
+          if [ ! -s notes.md ]; then echo "Release v$VERSION." > notes.md; fi
+          cat notes.md
+      - name: Create tag and GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v$VERSION" \
+            --target "$GITHUB_SHA" \
+            --title "FuelLog v$VERSION" \
+            --notes-file notes.md
+
+  android-apk:
+    name: Build Android APK and attach it
+    needs: [check, release]
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
+      CI: '1'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - run: npm ci
+      - name: Generate the native Android project
+        run: npx expo prebuild --platform android --no-install
+      - name: Build release APK
+        # The Expo template signs release builds with the debug keystore, which is fine
+        # for side-loading and testing. Store builds should use EAS Build with real keys.
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
+      - name: Attach APK to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk "FuelLog-v$VERSION.apk"
+          gh release upload "v$VERSION" "FuelLog-v$VERSION.apk" --clobber

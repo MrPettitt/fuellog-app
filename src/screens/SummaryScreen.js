@@ -4,9 +4,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { useApp } from '../AppContext';
 import { theme } from '../theme';
-import { monthLabel, allMonths, defaultMonth, buildSummaryText, calcStats, fmtR } from '../utils';
+import { monthLabel, allMonths, defaultMonth, buildSummaryText, buildCsv, calcStats, fmtR } from '../utils';
 
 export default function SummaryScreen({ navigation }) {
   const { entries, settings } = useApp();
@@ -31,6 +33,24 @@ export default function SummaryScreen({ navigation }) {
       });
     } catch (err) {
       Alert.alert('Share Failed', err.message);
+    }
+  };
+
+  // Writes the month to a .csv file in the cache folder and opens the share sheet.
+  // Where file sharing is not available (e.g. web) the CSV text is shared instead.
+  const shareCsv = async () => {
+    const csv = buildCsv(entries, month);
+    try {
+      const canShareFile = Platform.OS !== 'web' && FileSystem.cacheDirectory && await Sharing.isAvailableAsync();
+      if (canShareFile) {
+        const uri = `${FileSystem.cacheDirectory}FuelLog-${month}.csv`;
+        await FileSystem.writeAsStringAsync(uri, csv, { encoding: FileSystem.EncodingType.UTF8 });
+        await Sharing.shareAsync(uri, { mimeType: 'text/csv', dialogTitle: `FuelLog ${monthLabel(month)} (CSV)`, UTI: 'public.comma-separated-values-text' });
+      } else {
+        await Share.share({ message: csv, title: `FuelLog ${monthLabel(month)} (CSV)` });
+      }
+    } catch (err) {
+      Alert.alert('Export Failed', err.message);
     }
   };
 
@@ -73,6 +93,9 @@ export default function SummaryScreen({ navigation }) {
           </TouchableOpacity>
           <TouchableOpacity style={s.btnCopy} onPress={copyToClipboard}>
             <Text style={s.btnCopyText}>📋  Copy</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={s.btnCopy} onPress={shareCsv} disabled={st.count === 0}>
+            <Text style={[s.btnCopyText, st.count === 0 && { color: theme.muted }]}>📊  CSV</Text>
           </TouchableOpacity>
         </View>
 
@@ -148,7 +171,7 @@ const s = StyleSheet.create({
   actions:      { flexDirection: 'row', gap: 10, marginBottom: 14 },
   btnShare:     { flex: 1, backgroundColor: theme.navy, borderRadius: 4, paddingVertical: 13, alignItems: 'center' },
   btnShareText: { color: '#fff', fontWeight: '700', fontSize: 14 },
-  btnCopy:      { flex: 0.6, backgroundColor: theme.card, borderWidth: 1.5, borderColor: theme.border, borderRadius: 4, paddingVertical: 13, alignItems: 'center' },
+  btnCopy:      { flex: 0.55, backgroundColor: theme.card, borderWidth: 1.5, borderColor: theme.border, borderRadius: 4, paddingVertical: 13, alignItems: 'center' },
   btnCopyText:  { color: theme.navy, fontWeight: '700', fontSize: 14 },
 
   card:       { backgroundColor: theme.card, borderWidth: 1, borderColor: theme.border, borderRadius: 4 },

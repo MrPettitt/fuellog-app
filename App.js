@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { View, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import DashboardScreen  from './src/screens/DashboardScreen';
@@ -13,11 +12,10 @@ import MonthlyLogScreen from './src/screens/MonthlyLogScreen';
 import SummaryScreen    from './src/screens/SummaryScreen';
 import SettingsScreen   from './src/screens/SettingsScreen';
 
-import { dummyEntries, defaultSettings, blankSettings } from './src/utils';
+import { demoEntries, demoSettings, blankSettings } from './src/utils';
+import { loadData, saveData } from './src/storage';
 import { theme } from './src/theme';
 import { AppContext } from './src/AppContext';
-
-// ─── Global Context ───────────────────────────────────────────────────────────
 
 const Tab = createBottomTabNavigator();
 
@@ -31,60 +29,61 @@ const ICONS = {
 
 export default function App() {
   const [entries,  setEntries]  = useState([]);
-  const [settings, setSettings] = useState(defaultSettings);
+  const [settings, setSettings] = useState(blankSettings);
   const [loaded,   setLoaded]   = useState(false);
+
+  // Latest state, so saves never write a stale snapshot. `canWrite` stays false
+  // when storage is unavailable, so we never clobber data we could not read.
+  const latest   = useRef({ entries: [], settings: blankSettings });
+  const canWrite = useRef(false);
+  latest.current = { entries, settings };
 
   // ── Load from storage ──
   useEffect(() => {
+    let cancelled = false;
     (async () => {
-      try {
-        const raw = await AsyncStorage.getItem('fuellog_v1');
-        if (raw) {
-          const d = JSON.parse(raw);
-          setEntries(Array.isArray(d.entries) ? d.entries : dummyEntries);
-          setSettings(s => ({ ...s, ...(d.settings || {}) }));
-        } else {
-          // First launch - seed with demo data
-          setEntries(dummyEntries);
-          setSettings(defaultSettings);
-          await AsyncStorage.setItem('fuellog_v1', JSON.stringify({ entries: dummyEntries, settings: defaultSettings }));
-        }
-      } catch (_) {
-        setEntries(dummyEntries);
-        setSettings(defaultSettings);
+      const d = await loadData();
+      if (cancelled) return;
+      if (d.status === 'ok') {
+        setEntries(d.entries);
+        setSettings({ ...blankSettings, ...d.settings });
       }
+      canWrite.current = d.status !== 'unavailable';
       setLoaded(true);
+      if (d.status === 'corrupt') {
+        Alert.alert(
+          'Saved data could not be read',
+          'A copy of the unreadable data has been kept on the device. The app is starting with an empty log.',
+        );
+      } else if (d.status === 'unavailable') {
+        Alert.alert(
+          'Storage unavailable',
+          'The app could not access its saved data. Changes made now will not be saved.',
+        );
+      }
     })();
+    return () => { cancelled = true; };
   }, []);
 
-  // ── Persist helpers ──
-  const persist = async (e, s) => {
-    try { await AsyncStorage.setItem('fuellog_v1', JSON.stringify({ entries: e, settings: s })); } catch (_) {}
-  };
+  // ── Persist ──
+  const commit = useCallback((next) => {
+    const merged = { ...latest.current, ...next };
+    latest.current = merged;
+    if (next.entries)  setEntries(merged.entries);
+    if (next.settings) setSettings(merged.settings);
+    if (canWrite.current) {
+      saveData(merged.entries, merged.settings).then(ok => {
+        if (!ok) Alert.alert('Save failed', 'Your latest change could not be saved to the device.');
+      });
+    }
+  }, []);
 
-  const addEntry = (entry) => {
-    const next = [...entries, entry];
-    setEntries(next);
-    persist(next, settings);
-  };
-
-  const deleteEntry = (id) => {
-    const next = entries.filter(e => e.id !== id);
-    setEntries(next);
-    persist(next, settings);
-  };
-
-  const updateSettings = (s) => {
-    setSettings(s);
-    persist(entries, s);
-  };
-
-  const clearAll = () => {
-    setEntries([]);
-    const s = { ...blankSettings };
-    setSettings(s);
-    persist([], s);
-  };
+  const addEntry       = (entry)  => commit({ entries: [...latest.current.entries, entry] });
+  const updateEntry    = (entry)  => commit({ entries: latest.current.entries.map(e => (e.id === entry.id ? entry : e)) });
+  const deleteEntry    = (id)     => commit({ entries: latest.current.entries.filter(e => e.id !== id) });
+  const updateSettings = (s)      => commit({ settings: { ...blankSettings, ...s } });
+  const clearAll       = ()       => commit({ entries: [], settings: { ...blankSettings } });
+  const loadDemoData   = ()       => commit({ entries: [...demoEntries], settings: { ...demoSettings } });
 
   if (!loaded) {
     return (
@@ -95,7 +94,7 @@ export default function App() {
   }
 
   return (
-    <AppContext.Provider value={{ entries, settings, addEntry, deleteEntry, updateSettings, clearAll }}>
+    <AppContext.Provider value={{ entries, settings, addEntry, updateEntry, deleteEntry, updateSettings, clearAll, loadDemoData }}>
       <SafeAreaProvider>
         <StatusBar style="light" />
         <NavigationContainer>
@@ -106,7 +105,7 @@ export default function App() {
               headerTitleStyle: { fontWeight: '700', letterSpacing: 0.5 },
               tabBarActiveTintColor:   theme.amber,
               tabBarInactiveTintColor: '#999',
-              tabBarStyle: { borderTopColor: '#DDD9CF', backgroundColor: '#fff', paddingBottom: 4 },
+              tabBarStyle: { borderTopColor: theme.border, backgroundColor: '#fff', paddingBottom: 4 },
               tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
               tabBarIcon: ({ focused, color, size }) => {
                 const [on, off] = ICONS[route.name] || ['ellipse', 'ellipse-outline'];
@@ -115,7 +114,11 @@ export default function App() {
             })}
           >
             <Tab.Screen name="Dashboard"  component={DashboardScreen}  options={{ title: 'Dashboard' }} />
-            <Tab.Screen name="Add Entry"  component={AddEntryScreen}   options={{ title: 'New Entry' }} />
+            <Tab.Screen
+              name="Add Entry"
+              component={AddEntryScreen}
+              options={({ route }) => ({ title: route.params?.edit ? 'Edit Entry' : 'New Entry' })}
+            />
             <Tab.Screen name="Log"        component={MonthlyLogScreen} options={{ title: 'Monthly Log' }} />
             <Tab.Screen name="Summary"    component={SummaryScreen}    options={{ title: 'Summary' }} />
             <Tab.Screen name="Settings"   component={SettingsScreen}   options={{ title: 'Settings' }} />

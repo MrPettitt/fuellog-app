@@ -5,16 +5,19 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useApp } from '../AppContext';
 import { theme } from '../theme';
-import { num } from '../utils';
+import Constants from 'expo-constants';
+import { num, DEFAULT_RATE } from '../utils';
 
-export default function SettingsScreen() {
-  const { settings, updateSettings, clearAll } = useApp();
+const APP_VERSION = Constants.expoConfig?.version || '2.0.0';
+
+export default function SettingsScreen({ navigation }) {
+  const { settings, updateSettings, clearAll, loadDemoData, entries } = useApp();
 
   const [name,    setName]    = useState(settings.employeeName   || '');
   const [company, setCompany] = useState(settings.employerName   || '');
   const [vehicle, setVehicle] = useState(settings.vehicleMake    || '');
   const [reg,     setReg]     = useState(settings.vehicleReg     || '');
-  const [rate,    setRate]    = useState(String(settings.ratePerKm || 4.28));
+  const [rate,    setRate]    = useState(String(settings.ratePerKm || DEFAULT_RATE));
   const [saved,   setSaved]   = useState(false);
 
   useEffect(() => {
@@ -22,19 +25,23 @@ export default function SettingsScreen() {
     setCompany(settings.employerName || '');
     setVehicle(settings.vehicleMake  || '');
     setReg(settings.vehicleReg       || '');
-    setRate(String(settings.ratePerKm || 4.28));
+    setRate(String(settings.ratePerKm || DEFAULT_RATE));
   }, [settings]);
 
   const save = () => {
     if (!name.trim()) {
       Alert.alert('Required', 'Please enter your name.'); return;
     }
+    const r = num(rate);
+    if (!(r > 0 && r < 1000)) {
+      Alert.alert('Invalid rate', `Enter the rate per kilometre as a number, e.g. ${DEFAULT_RATE.toFixed(2)}.`); return;
+    }
     updateSettings({
       employeeName:    name.trim(),
       employerName:    company.trim(),
       vehicleMake:     vehicle.trim(),
       vehicleReg:      reg.trim(),
-      ratePerKm:       num(rate) || 4.28,
+      ratePerKm:       r,
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
@@ -47,6 +54,19 @@ export default function SettingsScreen() {
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Yes, Clear', style: 'destructive', onPress: clearAll },
+      ]
+    );
+  };
+
+  const confirmDemo = () => {
+    Alert.alert(
+      'Load demo data',
+      entries.length
+        ? 'This replaces your current entries and profile with three months of sample data. Continue?'
+        : 'This fills the app with three months of sample entries and a sample profile so you can try it out.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Load', onPress: () => { loadDemoData(); navigation.navigate('Dashboard'); } },
       ]
     );
   };
@@ -76,7 +96,7 @@ export default function SettingsScreen() {
           />
           <View style={s.rateNote}>
             <Text style={s.rateNoteText}>
-              💡 The current SARS AA rate is R 4.28/km for private vehicles. Confirm the rate with your employer before submitting claims.
+              💡 The SARS AA rate is R {DEFAULT_RATE.toFixed(2)}/km for private vehicles. Confirm the rate with your employer before submitting claims.
             </Text>
           </View>
         </View>
@@ -85,6 +105,20 @@ export default function SettingsScreen() {
         <TouchableOpacity style={[s.btnSave, saved && s.btnSaved]} onPress={save}>
           <Text style={s.btnSaveText}>{saved ? '✓ Settings Saved' : 'Save Settings'}</Text>
         </TouchableOpacity>
+
+        {/* Demo data */}
+        <SectionHeader title="Try it out" />
+        <View style={s.card}>
+          <View style={s.dangerRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.rowTitle}>Load demo data</Text>
+              <Text style={s.dangerSub}>Three months of sample trips and fill-ups with a sample profile</Text>
+            </View>
+            <TouchableOpacity style={s.btnOutline} onPress={confirmDemo}>
+              <Text style={s.btnOutlineText}>Load</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
         {/* Danger zone */}
         <SectionHeader title="Danger Zone" danger />
@@ -100,7 +134,7 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        <Text style={s.version}>FuelLog v1.0 · Built for South African business travel</Text>
+        <Text style={s.version}>FuelLog v{APP_VERSION} · Built for South African business travel</Text>
 
       </ScrollView>
     </SafeAreaView>
@@ -163,6 +197,9 @@ const s = StyleSheet.create({
   btnSaveText: { color: '#fff', fontWeight: '700', fontSize: 15, letterSpacing: 0.3 },
 
   dangerRow:   { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
+  rowTitle:    { fontSize: 14, fontWeight: '700', color: theme.navy },
+  btnOutline:  { borderWidth: 1.5, borderColor: theme.navy, borderRadius: 4, paddingHorizontal: 16, paddingVertical: 9 },
+  btnOutlineText: { color: theme.navy, fontWeight: '700', fontSize: 13 },
   dangerTitle: { fontSize: 14, fontWeight: '700', color: theme.danger },
   dangerSub:   { fontSize: 12, color: theme.muted, marginTop: 2 },
   btnDanger:   { borderWidth: 1.5, borderColor: theme.danger, borderRadius: 4, paddingHorizontal: 16, paddingVertical: 9 },

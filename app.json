@@ -2,22 +2,31 @@
   "expo": {
     "name": "FuelLog",
     "slug": "fuellog",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "backgroundColor": "#F5F3EE",
     "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
       "backgroundColor": "#0B1F3A"
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.yourcompany.fuellog"
+      "bundleIdentifier": "com.mrpettitt.fuellog",
+      "buildNumber": "2"
     },
     "android": {
-      "package": "com.yourcompany.fuellog",
+      "package": "com.mrpettitt.fuellog",
+      "versionCode": 2,
       "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0B1F3A"
       }
+    },
+    "icon": "./assets/icon.png",
+    "web": {
+      "favicon": "./assets/favicon.png"
     }
   }
 }

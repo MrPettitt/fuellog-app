@@ -1,16 +1,24 @@
 // ─────────────────────────────────
 // Helpers
 // ─────────────────────────────────
+
+// SARS AA rate for private vehicles. Editable per user in Settings.
+export const DEFAULT_RATE = 4.28;
+
 export function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
 }
 
-export function today() {
-  return new Date().toISOString().split('T')[0];
+const pad2 = (n) => String(n).padStart(2, '0');
+
+// Local calendar date as YYYY-MM-DD. toISOString() is UTC, which is the wrong day
+// for the first two hours after midnight in South Africa (UTC+2).
+export function today(now = new Date()) {
+  return `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
 }
 
-export function nowMonth() {
-  return new Date().toISOString().slice(0, 7);
+export function nowMonth(now = new Date()) {
+  return today(now).slice(0, 7);
 }
 
 // Parse user-typed numbers: tolerates spaces ("85 420") and decimal commas ("42,5")
@@ -43,14 +51,15 @@ export function fmtR(n) {
   return 'R ' + Number(n || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
+const MONTHS = [
+  'January','February','March','April','May','June',
+  'July','August','September','October','November','December',
+];
+
 export function monthLabel(ym) {
-  if (!ym) return '';
+  if (!/^\d{4}-\d{2}$/.test(ym || '')) return '';
   const [y, m] = ym.split('-');
-  const months = [
-    'January','February','March','April','May','June',
-    'July','August','September','October','November','December',
-  ];
-  return months[+m - 1] + ' ' + y;
+  return MONTHS[+m - 1] ? `${MONTHS[+m - 1]} ${y}` : '';
 }
 
 export function monthEntries(entries, month) {
@@ -68,7 +77,7 @@ export function calcStats(entries, month, ratePerKm) {
     fuels:      fuels.length,
     km,
     fuel,
-    reimburse:  km * (ratePerKm || 4.28),
+    reimburse:  km * (+ratePerKm > 0 ? +ratePerKm : DEFAULT_RATE),
     count:      es.length,
   };
 }
@@ -118,7 +127,7 @@ export function buildSummaryText(entries, month, settings) {
   ln.push('');
   ln.push(line);
   ln.push(`  TOTAL BUSINESS KM    : ${st.km.toFixed(1)} km`);
-  ln.push(`  REIMBURSEMENT RATE   : R ${(+settings.ratePerKm).toFixed(2)}/km`);
+  ln.push(`  REIMBURSEMENT RATE   : R ${(+settings.ratePerKm > 0 ? +settings.ratePerKm : DEFAULT_RATE).toFixed(2)}/km`);
   ln.push(`  TOTAL REIMBURSEMENT  : ${fmtR(st.reimburse)}`);
 
   if (fuels.length > 0) {
@@ -142,28 +151,65 @@ export function buildSummaryText(entries, month, settings) {
 }
 
 // ─────────────────────────────────
-// Default settings
+// CSV export
+// ─────────────────────────────────
+// Quote one CSV cell. Text starting with = + - @ (or a tab/CR) gets a leading
+// apostrophe so a spreadsheet never evaluates user-typed text as a formula.
+export function csvCell(v) {
+  let t = v === null || v === undefined ? '' : String(v);
+  if (/^[=+\-@\t\r]/.test(t) && isNaN(Number(t))) t = "'" + t;
+  return /[",\r\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+}
+
+export const CSV_HEADER = [
+  'Date', 'Type', 'Description', 'Category', 'Distance (km)', 'Start odometer',
+  'End odometer', 'Litres', 'Price per litre (R)', 'Total cost (R)', 'Notes',
+];
+
+export function buildCsv(entries, month) {
+  const rows = [CSV_HEADER];
+  monthEntries(entries, month)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .forEach(e => {
+      if (e.type === 'trip') {
+        rows.push([
+          e.date, 'Trip', e.purpose, e.category, (+e.km || 0).toFixed(1),
+          e.manualKm ? '' : e.startOdo, e.manualKm ? '' : e.endOdo, '', '', '', e.notes,
+        ]);
+      } else {
+        rows.push([
+          e.date, 'Fuel', e.station, '', '', '', '',
+          (+e.litres || 0).toFixed(2), (+e.pricePerLitre || 0).toFixed(3),
+          (+e.totalCost || 0).toFixed(2), '',
+        ]);
+      }
+    });
+  return rows.map(r => r.map(csvCell).join(',')).join('\r\n');
+}
+
+// ─────────────────────────────────
+// Blank profile (first run) and demo profile
 // ─────────────────────────────────
 export const blankSettings = {
   employeeName:    '',
   employerName:    '',
   vehicleMake:     '',
   vehicleReg:      '',
-  ratePerKm:       4.28,
+  ratePerKm:       DEFAULT_RATE,
 };
 
-export const defaultSettings = {
+export const demoSettings = {
   employeeName:    'Thabo Nkosi',
   employerName:    'Apex Solutions (Pty) Ltd',
   vehicleMake:     'Toyota Corolla Quest',
   vehicleReg:      'GP 42 FL',
-  ratePerKm:       4.28,
+  ratePerKm:       DEFAULT_RATE,
 };
 
 // ─────────────────────────────────
-// Dummy data - 3 months of entries
+// Demo data - 3 months of entries (loaded on request from Settings)
 // ─────────────────────────────────
-export const dummyEntries = [
+export const demoEntries = [
   // ── January 2026 ──
   {
     id: 'demo01', type: 'trip', date: '2026-01-06',
