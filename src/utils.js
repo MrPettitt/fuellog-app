@@ -1,6 +1,6 @@
-// ─────────────────────────────────
+// ---------------------------------
 // Helpers
-// ─────────────────────────────────
+// ---------------------------------
 
 // SARS AA rate for private vehicles. Editable per user in Settings.
 export const DEFAULT_RATE = 4.28;
@@ -88,9 +88,9 @@ export function allMonths(entries) {
   return [...ms].sort().reverse();
 }
 
-// ─────────────────────────────────
+// ---------------------------------
 // Summary builder
-// ─────────────────────────────────
+// ---------------------------------
 export function buildSummaryText(entries, month, settings) {
   const es    = monthEntries(entries, month).sort((a, b) => a.date.localeCompare(b.date));
   const trips = es.filter(e => e.type === 'trip');
@@ -98,7 +98,7 @@ export function buildSummaryText(entries, month, settings) {
   const st    = calcStats(entries, month, settings.ratePerKm);
   const s     = settings;
   const W     = 56;
-  const line  = '─'.repeat(W);
+  const line  = '-'.repeat(W);
   const ln    = [];
   const mo    = monthLabel(month).toUpperCase();
 
@@ -120,7 +120,7 @@ export function buildSummaryText(entries, month, settings) {
       ln.push(`  ${num}. ${fmtDate(t.date)}  ${t.purpose || 'Business Trip'}`);
       ln.push(`      ${km}${t.category ? '  ·  ' + t.category : ''}`);
       if (!t.manualKm && t.startOdo)
-        ln.push(`      Odo: ${Number(t.startOdo).toLocaleString('en-ZA')} → ${Number(t.endOdo).toLocaleString('en-ZA')} km`);
+        ln.push(`      Odo: ${Number(t.startOdo).toLocaleString('en-ZA')} to ${Number(t.endOdo).toLocaleString('en-ZA')} km`);
       if (t.notes) ln.push(`      Note: ${t.notes}`);
     });
   }
@@ -150,9 +150,9 @@ export function buildSummaryText(entries, month, settings) {
   return ln.join('\n');
 }
 
-// ─────────────────────────────────
+// ---------------------------------
 // CSV export
-// ─────────────────────────────────
+// ---------------------------------
 // Quote one CSV cell. Text starting with = + - @ (or a tab/CR) gets a leading
 // apostrophe so a spreadsheet never evaluates user-typed text as a formula.
 export function csvCell(v) {
@@ -187,9 +187,9 @@ export function buildCsv(entries, month) {
   return rows.map(r => r.map(csvCell).join(',')).join('\r\n');
 }
 
-// ─────────────────────────────────
+// ---------------------------------
 // Blank profile (first run) and demo profile
-// ─────────────────────────────────
+// ---------------------------------
 export const blankSettings = {
   employeeName:    '',
   employerName:    '',
@@ -206,11 +206,11 @@ export const demoSettings = {
   ratePerKm:       DEFAULT_RATE,
 };
 
-// ─────────────────────────────────
+// ---------------------------------
 // Demo data - 3 months of entries (loaded on request from Settings)
-// ─────────────────────────────────
+// ---------------------------------
 export const demoEntries = [
-  // ── January 2026 ──
+  // -- January 2026 --
   {
     id: 'demo01', type: 'trip', date: '2026-01-06',
     purpose: 'Client meeting - Sandton City', category: 'Client Visit',
@@ -240,7 +240,7 @@ export const demoEntries = [
     station: 'Engen Rivonia', litres: 42.10, pricePerLitre: 22.49, totalCost: 947.44,
   },
 
-  // ── February 2026 ──
+  // -- February 2026 --
   {
     id: 'demo07', type: 'trip', date: '2026-02-03',
     purpose: 'Head office meeting - Fourways', category: 'Meeting',
@@ -270,7 +270,7 @@ export const demoEntries = [
     station: 'Total Centurion', litres: 38.75, pricePerLitre: 22.95, totalCost: 889.31,
   },
 
-  // ── March 2026 ──
+  // -- March 2026 --
   {
     id: 'demo13', type: 'trip', date: '2026-03-04',
     purpose: 'Board meeting - Melrose Arch', category: 'Meeting',

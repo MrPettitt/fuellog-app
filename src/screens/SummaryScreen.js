@@ -1,38 +1,38 @@
 import React, { useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Share, Modal, Platform,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Share, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { useApp } from '../AppContext';
-import { theme } from '../theme';
+import { theme, card } from '../theme';
 import { monthLabel, allMonths, defaultMonth, buildSummaryText, buildCsv, calcStats, fmtR } from '../utils';
+import { MonthHeader, MonthModal } from '../components/MonthPicker';
 
 export default function SummaryScreen({ navigation }) {
   const { entries, settings } = useApp();
-  const [picked,     setPicked]     = useState(null);   // null = follow latest month with data
+  const [picked, setPicked] = useState(null);   // null = follow latest month with data
   const month = picked ?? defaultMonth(entries);
   const [monthModal, setMonthModal] = useState(false);
 
   const months  = allMonths(entries);
   const st      = calcStats(entries, month, settings.ratePerKm);
   const summary = buildSummaryText(entries, month, settings);
+  const nothing = st.count === 0;
 
   const copyToClipboard = async () => {
     await Clipboard.setStringAsync(summary);
-    Alert.alert('✓ Copied', 'Summary copied to clipboard. Paste it into an email or message to your employer.');
+    Alert.alert('Copied', 'The report is on your clipboard. Paste it into an email or message to your employer.');
   };
 
   const shareReport = async () => {
     try {
-      await Share.share({
-        message: summary,
-        title:   `FuelLog - ${monthLabel(month)}`,
-      });
+      await Share.share({ message: summary, title: `FuelLog - ${monthLabel(month)}` });
     } catch (err) {
-      Alert.alert('Share Failed', err.message);
+      Alert.alert('Share failed', err.message);
     }
   };
 
@@ -50,7 +50,7 @@ export default function SummaryScreen({ navigation }) {
         await Share.share({ message: csv, title: `FuelLog ${monthLabel(month)} (CSV)` });
       }
     } catch (err) {
-      Alert.alert('Export Failed', err.message);
+      Alert.alert('Export failed', err.message);
     }
   };
 
@@ -58,51 +58,47 @@ export default function SummaryScreen({ navigation }) {
     <SafeAreaView style={s.safe} edges={['bottom']}>
       <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
 
-        {/* Month header */}
-        <View style={s.monthRow}>
-          <View>
-            <Text style={s.monthTitle}>{monthLabel(month)}</Text>
-            <Text style={s.monthSub}>Reimbursement report</Text>
-          </View>
-          <TouchableOpacity style={s.monthChip} onPress={() => setMonthModal(true)}>
-            <Text style={s.monthChipText}>Change ▾</Text>
-          </TouchableOpacity>
-        </View>
+        <MonthHeader month={month} subtitle="Reimbursement report" onPress={() => setMonthModal(true)} />
 
         {/* Profile notice */}
         {!settings.employeeName && (
           <TouchableOpacity style={s.notice} onPress={() => navigation.navigate('Settings')}>
-            <Text style={s.noticeIcon}>⚙️</Text>
+            <View style={s.noticeIcon}><Ionicons name="person-outline" size={18} color={theme.amber} /></View>
             <View style={{ flex: 1 }}>
               <Text style={s.noticeTitle}>Set up your profile</Text>
-              <Text style={s.noticeSub}>Add your name and employer in Settings for a complete report →</Text>
+              <Text style={s.noticeSub}>Add your name and employer in Settings for a complete report.</Text>
             </View>
+            <Ionicons name="chevron-forward" size={18} color={theme.muted} />
           </TouchableOpacity>
         )}
 
-        {/* Summary cards */}
+        {/* Highlights */}
         <View style={s.highlights}>
-          <Highlight label="Total KM"      value={`${st.km.toFixed(1)} km`} />
-          <Highlight label="Est. Reimburse" value={fmtR(st.reimburse)} green />
+          <Highlight icon="map-outline"   label="Business km"   value={`${st.km.toFixed(1)} km`} />
+          <Highlight icon="cash-outline"  label="Reimbursement" value={fmtR(st.reimburse)} green />
         </View>
 
-        {/* Action buttons */}
-        <View style={s.actions}>
-          <TouchableOpacity style={s.btnShare} onPress={shareReport}>
-            <Text style={s.btnShareText}>📤  Share Report</Text>
+        {/* Actions */}
+        <TouchableOpacity style={[s.btnShare, nothing && s.btnDisabled]} onPress={shareReport} disabled={nothing}>
+          <Ionicons name="share-social-outline" size={18} color="#fff" />
+          <Text style={s.btnShareText}>Share report</Text>
+        </TouchableOpacity>
+        <View style={s.actionsRow}>
+          <TouchableOpacity style={[s.btnSecondary, nothing && s.btnDisabled]} onPress={copyToClipboard} disabled={nothing}>
+            <Ionicons name="copy-outline" size={17} color={theme.navy} />
+            <Text style={s.btnSecondaryText}>Copy text</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={s.btnCopy} onPress={copyToClipboard}>
-            <Text style={s.btnCopyText}>📋  Copy</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.btnCopy} onPress={shareCsv} disabled={st.count === 0}>
-            <Text style={[s.btnCopyText, st.count === 0 && { color: theme.muted }]}>📊  CSV</Text>
+          <TouchableOpacity style={[s.btnSecondary, nothing && s.btnDisabled]} onPress={shareCsv} disabled={nothing}>
+            <Ionicons name="grid-outline" size={17} color={theme.navy} />
+            <Text style={s.btnSecondaryText}>Export CSV</Text>
           </TouchableOpacity>
         </View>
 
         {/* Report preview */}
         <View style={s.card}>
           <View style={s.cardHeader}>
-            <Text style={s.cardTitle}>Report Preview</Text>
+            <Ionicons name="document-text-outline" size={16} color={theme.muted} />
+            <Text style={s.cardTitle}>Report preview</Text>
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <Text style={s.report} selectable>{summary}</Text>
@@ -111,35 +107,23 @@ export default function SummaryScreen({ navigation }) {
 
       </ScrollView>
 
-      {/* Month picker modal */}
-      <Modal visible={monthModal} transparent animationType="fade" onRequestClose={() => setMonthModal(false)}>
-        <TouchableOpacity style={s.modalOverlay} activeOpacity={1} onPress={() => setMonthModal(false)}>
-          <View style={s.modalBox}>
-            <Text style={s.modalTitle}>Select Month</Text>
-            <ScrollView>
-              {months.map(m => (
-                <TouchableOpacity
-                  key={m}
-                  style={[s.modalOpt, m === month && s.modalOptActive]}
-                  onPress={() => { setPicked(m); setMonthModal(false); }}
-                >
-                  <Text style={[s.modalOptText, m === month && s.modalOptTextActive]}>{monthLabel(m)}</Text>
-                  {m === month && <Text style={{ color: theme.amber }}>✓</Text>}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+      <MonthModal
+        visible={monthModal} months={months} month={month}
+        onSelect={m => { setPicked(m); setMonthModal(false); }}
+        onClose={() => setMonthModal(false)}
+      />
     </SafeAreaView>
   );
 }
 
-function Highlight({ label, value, green }) {
+function Highlight({ icon, label, value, green }) {
   return (
     <View style={[s.hl, green && { borderTopColor: theme.success }]}>
-      <Text style={s.hlLabel}>{label}</Text>
-      <Text style={[s.hlValue, green && { color: theme.success }]}>{value}</Text>
+      <View style={s.hlTop}>
+        <Ionicons name={icon} size={15} color={green ? theme.success : theme.amber} />
+        <Text style={s.hlLabel}>{label}</Text>
+      </View>
+      <Text style={[s.hlValue, green && { color: theme.success }]} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
     </View>
   );
 }
@@ -149,45 +133,30 @@ const s = StyleSheet.create({
   scroll:  { flex: 1 },
   content: { padding: 16, paddingBottom: 32 },
 
-  monthRow:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 },
-  monthTitle:    { fontSize: 22, fontWeight: '800', color: theme.navy },
-  monthSub:      { fontSize: 12, color: theme.muted, marginTop: 2 },
-  monthChip:     { backgroundColor: theme.card, borderWidth: 1, borderColor: theme.border, borderRadius: 4, paddingHorizontal: 12, paddingVertical: 7, marginTop: 2 },
-  monthChipText: { fontSize: 13, fontWeight: '700', color: theme.navy },
-
-  notice:      { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.card, borderLeftWidth: 4, borderLeftColor: theme.amber, borderRadius: 4, padding: 14, marginBottom: 14 },
-  noticeIcon:  { fontSize: 22 },
+  notice:      { ...card, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, marginBottom: 12, borderColor: '#F3D9A4', backgroundColor: theme.amberSoft },
+  noticeIcon:  { width: 36, height: 36, borderRadius: 18, backgroundColor: theme.card, alignItems: 'center', justifyContent: 'center' },
   noticeTitle: { fontSize: 14, fontWeight: '700', color: theme.navy },
   noticeSub:   { fontSize: 12, color: theme.muted, marginTop: 2 },
 
-  highlights: { flexDirection: 'row', gap: 10, marginBottom: 14 },
-  hl: {
-    flex: 1, backgroundColor: theme.card, borderWidth: 1, borderColor: theme.border,
-    borderTopWidth: 3, borderTopColor: theme.amber, borderRadius: 4, padding: 14,
-  },
-  hlLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', color: theme.muted, marginBottom: 4 },
-  hlValue: { fontSize: 20, fontWeight: '800', color: theme.navy },
+  highlights: { flexDirection: 'row', gap: 10, marginBottom: 12 },
+  hl:      { flex: 1, ...card, borderTopWidth: 3, borderTopColor: theme.amber, padding: 14 },
+  hlTop:   { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
+  hlLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', color: theme.muted },
+  hlValue: { fontSize: 22, fontWeight: '800', color: theme.navy },
 
-  actions:      { flexDirection: 'row', gap: 10, marginBottom: 14 },
-  btnShare:     { flex: 1, backgroundColor: theme.navy, borderRadius: 4, paddingVertical: 13, alignItems: 'center' },
-  btnShareText: { color: '#fff', fontWeight: '700', fontSize: 14 },
-  btnCopy:      { flex: 0.55, backgroundColor: theme.card, borderWidth: 1.5, borderColor: theme.border, borderRadius: 4, paddingVertical: 13, alignItems: 'center' },
-  btnCopyText:  { color: theme.navy, fontWeight: '700', fontSize: 14 },
+  btnShare:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: theme.navy, borderRadius: theme.radiusSm, paddingVertical: 14, marginBottom: 10, ...theme.shadow },
+  btnShareText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  actionsRow:   { flexDirection: 'row', gap: 10, marginBottom: 12 },
+  btnSecondary: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, ...card, paddingVertical: 12 },
+  btnSecondaryText: { color: theme.navy, fontWeight: '700', fontSize: 14 },
+  btnDisabled:  { opacity: 0.45 },
 
-  card:       { backgroundColor: theme.card, borderWidth: 1, borderColor: theme.border, borderRadius: 4 },
-  cardHeader: { padding: 14, borderBottomWidth: 1, borderBottomColor: theme.border },
+  card:       { ...card },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 14, borderBottomWidth: 1, borderBottomColor: theme.border },
   cardTitle:  { fontSize: 15, fontWeight: '700', color: theme.navy },
   report:     {
     fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace',
     fontSize: 12, color: theme.text, lineHeight: 20,
     padding: 14, minWidth: '100%',
   },
-
-  modalOverlay:       { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center' },
-  modalBox:           { backgroundColor: theme.card, borderRadius: 8, width: '80%', maxHeight: '60%', padding: 4 },
-  modalTitle:         { fontSize: 14, fontWeight: '700', color: theme.navy, padding: 14, paddingBottom: 8 },
-  modalOpt:           { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13, borderTopWidth: 1, borderTopColor: theme.border },
-  modalOptActive:     { backgroundColor: '#F0F4FF' },
-  modalOptText:       { fontSize: 14, color: theme.text },
-  modalOptTextActive: { fontWeight: '700', color: theme.navy },
 });

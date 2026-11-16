@@ -4,8 +4,9 @@ import {
   Alert, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useApp } from '../AppContext';
-import { theme } from '../theme';
+import { theme, card } from '../theme';
 import { uid, today, num, isValidDate, fmtDate } from '../utils';
 
 const CATEGORIES = [
@@ -13,7 +14,7 @@ const CATEGORIES = [
   'Meeting', 'Training', 'Airport / Transport', 'Other Business',
 ];
 
-// ─── Main screen ──────────────────────────────────────────────────────────────
+// --- Main screen --------------------------------------------------------------
 // Opened from the tab bar to add an entry, or from the Monthly Log with
 // `route.params.edit` set to an existing entry to edit it in the same form.
 export default function AddEntryScreen({ navigation, route }) {
@@ -36,18 +37,21 @@ export default function AddEntryScreen({ navigation, route }) {
     <SafeAreaView style={s.safe} edges={['bottom']}>
       {editing ? (
         <View style={s.editBanner}>
+          <Ionicons name="pencil" size={15} color={theme.fuelText} />
           <Text style={s.editBannerText}>
-            ✏️  Editing {editing.type === 'trip' ? 'trip' : 'fill-up'} from {fmtDate(editing.date)}
+            Editing {editing.type === 'trip' ? 'trip' : 'fill-up'} from {fmtDate(editing.date)}
           </Text>
         </View>
       ) : (
         <View style={s.segWrap}>
           <View style={s.seg}>
             <TouchableOpacity style={[s.segBtn, tab === 'trip' && s.segBtnActive]} onPress={() => setTab('trip')}>
-              <Text style={[s.segText, tab === 'trip' && s.segTextActive]}>🚗  Business Trip</Text>
+              <MaterialCommunityIcons name="car" size={18} color={tab === 'trip' ? theme.navy : theme.muted} />
+              <Text style={[s.segText, tab === 'trip' && s.segTextActive]}>Business trip</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[s.segBtn, tab === 'fuel' && s.segBtnActive]} onPress={() => setTab('fuel')}>
-              <Text style={[s.segText, tab === 'fuel' && s.segTextActive]}>⛽  Fuel Fill-up</Text>
+              <MaterialCommunityIcons name="gas-station" size={18} color={tab === 'fuel' ? theme.navy : theme.muted} />
+              <Text style={[s.segText, tab === 'fuel' && s.segTextActive]}>Fuel fill-up</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -61,7 +65,7 @@ export default function AddEntryScreen({ navigation, route }) {
   );
 }
 
-// ─── Trip Form ────────────────────────────────────────────────────────────────
+// --- Trip Form ----------------------------------------------------------------
 function TripForm({ navigation, editing, finishEdit }) {
   const { addEntry, updateEntry } = useApp();
   const e = editing || {};
@@ -108,12 +112,12 @@ function TripForm({ navigation, editing, finishEdit }) {
     if (editing) {
       updateEntry(entry);
       finishEdit();
-      Alert.alert('✓ Updated', 'Trip has been updated.');
+      Alert.alert('Updated', 'Trip has been updated.');
       return;
     }
 
     addEntry(entry);
-    Alert.alert('✓ Saved', 'Trip has been logged.', [
+    Alert.alert('Saved', 'Trip has been logged.', [
       { text: 'Add Another', onPress: () => {} },
       { text: 'Dashboard',   onPress: () => navigation.navigate('Dashboard'), style: 'cancel' },
     ]);
@@ -126,37 +130,37 @@ function TripForm({ navigation, editing, finishEdit }) {
       <ScrollView style={s.scroll} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
 
         <Row label="Date">
-          <TextInput style={s.input} value={date} onChangeText={setDate} placeholder="YYYY-MM-DD" />
+          <TextInput style={s.input} placeholderTextColor={theme.placeholder} value={date} onChangeText={setDate} placeholder="YYYY-MM-DD" />
         </Row>
 
         <Row label="Trip Purpose / Description">
-          <TextInput style={s.input} value={purpose} onChangeText={setPurpose}
+          <TextInput style={s.input} placeholderTextColor={theme.placeholder} value={purpose} onChangeText={setPurpose}
             placeholder="e.g. Client meeting - Sandton City" />
         </Row>
 
         {/* Odometer toggle */}
         <TouchableOpacity style={s.toggleRow} onPress={() => setManual(!manual)}>
           <View style={[s.checkbox, manual && s.checkboxOn]}>
-            {manual && <Text style={s.checkmark}>✓</Text>}
+            {manual && <Ionicons name="checkmark" size={14} color="#fff" />}
           </View>
           <Text style={s.toggleLabel}>Enter distance manually (no odometer)</Text>
         </TouchableOpacity>
 
         {manual ? (
           <Row label="Distance (km)">
-            <TextInput style={s.input} value={manualKm} onChangeText={setManualKm}
+            <TextInput style={s.input} placeholderTextColor={theme.placeholder} value={manualKm} onChangeText={setManualKm}
               keyboardType="decimal-pad" placeholder="e.g. 42.5" />
           </Row>
         ) : (
           <View style={s.twoCol}>
             <View style={{ flex: 1 }}>
               <Text style={s.label}>Start Odometer (km)</Text>
-              <TextInput style={s.input} value={odoStart} onChangeText={setOdoStart}
+              <TextInput style={s.input} placeholderTextColor={theme.placeholder} value={odoStart} onChangeText={setOdoStart}
                 keyboardType="numeric" placeholder="e.g. 85 420" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={s.label}>End Odometer (km)</Text>
-              <TextInput style={s.input} value={odoEnd} onChangeText={setOdoEnd}
+              <TextInput style={s.input} placeholderTextColor={theme.placeholder} value={odoEnd} onChangeText={setOdoEnd}
                 keyboardType="numeric" placeholder="e.g. 85 468" />
             </View>
           </View>
@@ -164,20 +168,21 @@ function TripForm({ navigation, editing, finishEdit }) {
 
         {derivedKm > 0 && (
           <View style={s.calcInfo}>
-            <Text style={s.calcInfoText}>📍 Distance: {derivedKm.toFixed(1)} km</Text>
+            <Ionicons name="navigate-outline" size={16} color={theme.info} />
+            <Text style={s.calcInfoText}>Distance: {derivedKm.toFixed(1)} km</Text>
           </View>
         )}
 
         <Row label="Category">
           <TouchableOpacity style={[s.input, s.picker]} onPress={() => setCatModal(true)}>
             <Text style={s.pickerText}>{category}</Text>
-            <Text style={{ color: theme.muted }}>▾</Text>
+            <Ionicons name="chevron-down" size={16} color={theme.muted} />
           </TouchableOpacity>
         </Row>
 
         <Row label="Notes (optional)">
-          <TextInput style={s.input} value={notes} onChangeText={setNotes}
-            placeholder="Any additional notes…" />
+          <TextInput style={s.input} placeholderTextColor={theme.placeholder} value={notes} onChangeText={setNotes}
+            placeholder="Any additional notes" />
         </Row>
 
       </ScrollView>
@@ -195,12 +200,13 @@ function TripForm({ navigation, editing, finishEdit }) {
       <Modal visible={catModal} transparent animationType="fade" onRequestClose={() => setCatModal(false)}>
         <TouchableOpacity style={s.modalOverlay} activeOpacity={1} onPress={() => setCatModal(false)}>
           <View style={s.modalBox}>
-            <Text style={s.modalTitle}>Select Category</Text>
+            <View style={s.modalHandle} />
+            <Text style={s.modalTitle}>Select category</Text>
             {CATEGORIES.map(c => (
               <TouchableOpacity key={c} style={[s.modalOpt, c === category && s.modalOptActive]}
                 onPress={() => { setCategory(c); setCatModal(false); }}>
                 <Text style={[s.modalOptText, c === category && s.modalOptTextActive]}>{c}</Text>
-                {c === category && <Text style={{ color: theme.amber }}>✓</Text>}
+                {c === category && <Ionicons name="checkmark-circle" size={20} color={theme.amber} />}
               </TouchableOpacity>
             ))}
           </View>
@@ -210,7 +216,7 @@ function TripForm({ navigation, editing, finishEdit }) {
   );
 }
 
-// ─── Fuel Form ────────────────────────────────────────
+// --- Fuel Form ----------------------------------------
 function FuelForm({ navigation, editing, finishEdit }) {
   const { addEntry, updateEntry } = useApp();
   const e = editing || {};
@@ -261,12 +267,12 @@ function FuelForm({ navigation, editing, finishEdit }) {
     if (editing) {
       updateEntry(entry);
       finishEdit();
-      Alert.alert('✓ Updated', 'Fuel fill-up has been updated.');
+      Alert.alert('Updated', 'Fuel fill-up has been updated.');
       return;
     }
 
     addEntry(entry);
-    Alert.alert('✓ Saved', 'Fuel fill-up has been logged.', [
+    Alert.alert('Saved', 'Fuel fill-up has been logged.', [
       { text: 'Add Another', onPress: () => {} },
       { text: 'Dashboard',   onPress: () => navigation.navigate('Dashboard'), style: 'cancel' },
     ]);
@@ -278,35 +284,36 @@ function FuelForm({ navigation, editing, finishEdit }) {
       <ScrollView style={s.scroll} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
 
         <Row label="Date">
-          <TextInput style={s.input} value={date} onChangeText={setDate} placeholder="YYYY-MM-DD" />
+          <TextInput style={s.input} placeholderTextColor={theme.placeholder} value={date} onChangeText={setDate} placeholder="YYYY-MM-DD" />
         </Row>
 
         <Row label="Filling Station (optional)">
-          <TextInput style={s.input} value={station} onChangeText={setStation}
+          <TextInput style={s.input} placeholderTextColor={theme.placeholder} value={station} onChangeText={setStation}
             placeholder="e.g. Engen Bryanston" />
         </Row>
 
         <View style={s.threeCol}>
           <View style={{ flex: 1 }}>
             <Text style={s.label}>Litres</Text>
-            <TextInput style={s.input} value={litres} onChangeText={handleLitres}
+            <TextInput style={s.input} placeholderTextColor={theme.placeholder} value={litres} onChangeText={handleLitres}
               keyboardType="decimal-pad" placeholder="e.g. 40.50" />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={s.label}>Price/Litre (R)</Text>
-            <TextInput style={s.input} value={ppl} onChangeText={handlePpl}
+            <TextInput style={s.input} placeholderTextColor={theme.placeholder} value={ppl} onChangeText={handlePpl}
               keyboardType="decimal-pad" placeholder="e.g. 23.10" />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={s.label}>Total (R)</Text>
-            <TextInput style={s.input} value={total} onChangeText={handleTotal}
+            <TextInput style={s.input} placeholderTextColor={theme.placeholder} value={total} onChangeText={handleTotal}
               keyboardType="decimal-pad" placeholder="Auto" />
           </View>
         </View>
 
         {derivedTotal > 0 && (
           <View style={s.calcInfo}>
-            <Text style={s.calcInfoText}>💰 Total: R {derivedTotal.toFixed(2)}</Text>
+            <Ionicons name="cash-outline" size={16} color={theme.info} />
+            <Text style={s.calcInfoText}>Total: R {derivedTotal.toFixed(2)}</Text>
           </View>
         )}
 
@@ -324,7 +331,7 @@ function FuelForm({ navigation, editing, finishEdit }) {
   );
 }
 
-// ─── Shared helpers ───────────────────────────────────────────────────────────
+// --- Shared helpers -----------------------------------------------------------
 function Row({ label, children }) {
   return (
     <View style={s.formGroup}>
@@ -334,55 +341,55 @@ function Row({ label, children }) {
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+// --- Styles -----------------------------------------------------------------
 const s = StyleSheet.create({
   safe:    { flex: 1, backgroundColor: theme.bg },
   scroll:  { flex: 1 },
-  content: { padding: 16, paddingBottom: 20 },
+  content: { padding: 16, paddingBottom: 24 },
 
   segWrap: { backgroundColor: theme.card, borderBottomWidth: 1, borderBottomColor: theme.border, padding: 12 },
-  editBanner:     { backgroundColor: '#FFF7E6', borderBottomWidth: 1, borderBottomColor: '#F3D9A4', paddingHorizontal: 16, paddingVertical: 12 },
-  editBannerText: { fontSize: 13, fontWeight: '700', color: theme.fuelText },
-  seg:     { flexDirection: 'row', backgroundColor: theme.bg, borderRadius: 4, padding: 3, borderWidth: 1, borderColor: theme.border },
-  segBtn:  { flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: 3 },
-  segBtnActive: { backgroundColor: theme.card, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 3, elevation: 2 },
+  seg:     { flexDirection: 'row', backgroundColor: theme.bg, borderRadius: 999, padding: 4 },
+  segBtn:  { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 10, borderRadius: 999 },
+  segBtnActive: { backgroundColor: theme.card, ...theme.shadow },
   segText: { fontSize: 14, fontWeight: '600', color: theme.muted },
   segTextActive: { color: theme.navy, fontWeight: '700' },
+  editBanner:     { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: theme.amberSoft, borderBottomWidth: 1, borderBottomColor: '#F3D9A4', paddingHorizontal: 16, paddingVertical: 12 },
+  editBannerText: { fontSize: 13, fontWeight: '700', color: theme.fuelText },
 
-  formGroup: { marginBottom: 14 },
-  label:     { fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', color: theme.muted, marginBottom: 5 },
+  formGroup: { marginBottom: 16 },
+  label:     { fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', color: theme.muted, marginBottom: 6 },
   input:     {
     backgroundColor: theme.card, borderWidth: 1, borderColor: theme.border,
-    borderRadius: 4, paddingHorizontal: 12, paddingVertical: 11,
-    fontSize: 15, color: theme.text,
+    borderRadius: theme.radiusSm, paddingHorizontal: 14, paddingVertical: 12,
+    fontSize: 16, color: theme.text,
   },
 
-  toggleRow:  { flexDirection: 'row', alignItems: 'center', marginBottom: 14, gap: 10 },
-  checkbox:   { width: 20, height: 20, borderRadius: 3, borderWidth: 2, borderColor: theme.muted, alignItems: 'center', justifyContent: 'center' },
+  toggleRow:  { flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 10 },
+  checkbox:   { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: theme.muted, alignItems: 'center', justifyContent: 'center' },
   checkboxOn: { backgroundColor: theme.navy, borderColor: theme.navy },
-  checkmark:  { color: '#fff', fontSize: 13, fontWeight: '700' },
   toggleLabel:{ fontSize: 14, color: theme.text },
 
-  twoCol:   { flexDirection: 'row', gap: 10, marginBottom: 14 },
-  threeCol: { flexDirection: 'row', gap: 8, marginBottom: 14 },
+  twoCol:   { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  threeCol: { flexDirection: 'row', gap: 8, marginBottom: 16 },
 
-  calcInfo:     { backgroundColor: '#EBF5FF', borderWidth: 1, borderColor: '#B3D4F8', borderRadius: 4, padding: 10, marginBottom: 14 },
-  calcInfoText: { fontSize: 13, fontWeight: '700', color: '#1A56DB' },
+  calcInfo:     { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: theme.infoSoft, borderRadius: theme.radiusSm, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 16 },
+  calcInfoText: { fontSize: 14, fontWeight: '700', color: theme.info },
 
   picker:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  pickerText: { fontSize: 15, color: theme.text },
+  pickerText: { fontSize: 16, color: theme.text },
 
   footer:        { flexDirection: 'row', gap: 10, padding: 14, backgroundColor: theme.card, borderTopWidth: 1, borderTopColor: theme.border },
-  btnPrimary:    { flex: 1, backgroundColor: theme.navy, borderRadius: 4, paddingVertical: 13, alignItems: 'center' },
-  btnPrimaryText: { color: '#fff', fontWeight: '700', fontSize: 14, letterSpacing: 0.4 },
-  btnOutline:    { flex: 0.55, borderWidth: 1.5, borderColor: theme.border, borderRadius: 4, paddingVertical: 13, alignItems: 'center' },
-  btnOutlineText: { color: theme.text, fontWeight: '700', fontSize: 14 },
+  btnPrimary:    { flex: 1, backgroundColor: theme.navy, borderRadius: theme.radiusSm, paddingVertical: 14, alignItems: 'center', ...theme.shadow },
+  btnPrimaryText: { color: '#fff', fontWeight: '700', fontSize: 15, letterSpacing: 0.2 },
+  btnOutline:    { flex: 0.5, borderWidth: 1.5, borderColor: theme.border, borderRadius: theme.radiusSm, paddingVertical: 14, alignItems: 'center', backgroundColor: theme.card },
+  btnOutlineText: { color: theme.text, fontWeight: '700', fontSize: 15 },
 
-  modalOverlay:       { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center' },
-  modalBox:           { backgroundColor: theme.card, borderRadius: 8, width: '80%', padding: 4 },
-  modalTitle:         { fontSize: 14, fontWeight: '700', color: theme.navy, padding: 14, paddingBottom: 8 },
-  modalOpt:           { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13, borderTopWidth: 1, borderTopColor: theme.border },
-  modalOptActive:     { backgroundColor: '#F0F4FF' },
-  modalOptText:       { fontSize: 14, color: theme.text },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(11,31,58,0.45)', justifyContent: 'flex-end' },
+  modalBox:     { backgroundColor: theme.card, borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingHorizontal: 8, paddingBottom: 24, ...theme.shadowStrong },
+  modalHandle:  { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: theme.border, marginTop: 10, marginBottom: 6 },
+  modalTitle:   { fontSize: 13, fontWeight: '700', color: theme.muted, letterSpacing: 1, textTransform: 'uppercase', paddingHorizontal: 12, paddingVertical: 10 },
+  modalOpt:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 14, borderRadius: theme.radiusSm, marginHorizontal: 4 },
+  modalOptActive:     { backgroundColor: theme.amberSoft },
+  modalOptText:       { fontSize: 16, color: theme.text },
   modalOptTextActive: { fontWeight: '700', color: theme.navy },
 });

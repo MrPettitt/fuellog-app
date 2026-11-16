@@ -101,28 +101,29 @@ npx eas build --platform ios
 
 ```
 fuellog-app/
-├── App.js                       # Root - navigation + global context
-├── app.json                     # Expo config (version, identifiers, icons)
-├── package.json
-├── CHANGELOG.md                 # Release notes (the Release workflow reads these)
-├── assets/                      # App icon, adaptive icon, splash, favicon
-├── docs/screenshots/            # README screenshots
-├── __tests__/                   # Jest unit tests (utils, storage)
-├── jest.global-setup.js         # Pins the test time zone to Africa/Johannesburg
-├── .github/workflows/
-│   ├── ci.yml                   # CI: tests + Android/iOS bundle
-│   └── release.yml              # Tag + GitHub Release + APK on version bump
-└── src/
-    ├── AppContext.js            # Shared app state context
-    ├── storage.js               # Safe load/save of the saved data
-    ├── theme.js                 # Design tokens (colours, etc.)
-    ├── utils.js                 # Helpers, formatters, CSV export, demo data
-    └── screens/
-        ├── DashboardScreen.js   # Home stats & recent entries
-        ├── AddEntryScreen.js    # Trip / fuel entry form (also used to edit)
-        ├── MonthlyLogScreen.js  # Full monthly entry list
-        ├── SummaryScreen.js     # Shareable reimbursement report + CSV
-        └── SettingsScreen.js    # Profile, reimbursement rate, demo data
+|-- App.js                       # Root - navigation + global context
+|-- app.json                     # Expo config (version, identifiers, icons)
+|-- package.json
+|-- CHANGELOG.md                 # Release notes (the Release workflow reads these)
+|-- assets/                      # App icon, adaptive icon, splash, favicon
+|-- docs/screenshots/            # README screenshots
+|-- __tests__/                   # Jest unit tests (utils, storage)
+|-- jest.global-setup.js         # Pins the test time zone to Africa/Johannesburg
+|-- .github/workflows/
+|   |-- ci.yml                   # CI: tests + Android/iOS bundle
+|   `-- release.yml              # Tag + GitHub Release + APK on version bump
+`-- src/
+    |-- AppContext.js            # Shared app state context
+    |-- components/              # MonthPicker (header chip + sheet), EntryBadge
+    |-- storage.js               # Safe load/save of the saved data
+    |-- theme.js                 # Design tokens (colours, etc.)
+    |-- utils.js                 # Helpers, formatters, CSV export, demo data
+    `-- screens/
+        |-- DashboardScreen.js   # Home stats & recent entries
+        |-- AddEntryScreen.js    # Trip / fuel entry form (also used to edit)
+        |-- MonthlyLogScreen.js  # Full monthly entry list
+        |-- SummaryScreen.js     # Shareable reimbursement report + CSV
+        `-- SettingsScreen.js    # Profile, reimbursement rate, demo data
 ```
 
 ---

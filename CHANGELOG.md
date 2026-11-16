@@ -29,6 +29,10 @@ All notable changes to FuelLog are listed here. Each version is published as a
 - **Start empty.** First launch no longer fills the log with a fictional employee. Demo data is
   loaded on request from Settings, with a confirmation.
 - App icon, Android adaptive icon, splash screen and web favicon.
+- **Visual refresh.** Reimbursement hero card on the Dashboard, stat tiles, rounded cards with
+  soft shadows, vector icons instead of emoji (consistent on every phone), bottom-sheet month and
+  category pickers, pill-shaped Edit and Delete actions in the Monthly Log, icon buttons on the
+  Summary screen and clearer section headers in Settings.
 - Unit tests for local dates, CSV output and the storage layer (34 tests, up from 13), pinned to
   the Africa/Johannesburg time zone so they pass on any machine.
 
@@ -40,6 +44,9 @@ All notable changes to FuelLog are listed here. Each version is published as a
   dependencies.
 - CI runs on Node 22 with current action versions; a Release workflow publishes a GitHub Release
   (with an Android APK) whenever the version in `package.json` changes on `main`.
+- Month picker and entry badge extracted into `src/components/`; design tokens (radius, shadows,
+  semantic colours) live in `src/theme.js`.
+- Plain hyphens are used everywhere in text, including the separator lines in the shared report.
 - README: deprecated `expo build` commands replaced with EAS Build; screenshots refreshed and a
   Settings screenshot added.
 

@@ -3,8 +3,9 @@ import {
   View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useApp } from '../AppContext';
-import { theme } from '../theme';
+import { theme, card } from '../theme';
 import Constants from 'expo-constants';
 import { num, DEFAULT_RATE } from '../utils';
 
@@ -76,7 +77,7 @@ export default function SettingsScreen({ navigation }) {
       <ScrollView style={s.scroll} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
 
         {/* Profile section */}
-        <SectionHeader title="Employee Profile" />
+        <SectionHeader icon="person-outline" title="Employee profile" />
         <View style={s.card}>
           <Field label="Your Full Name" value={name} onChangeText={setName} placeholder="e.g. Thabo Nkosi" />
           <Field label="Employer / Company" value={company} onChangeText={setCompany} placeholder="e.g. Apex Solutions (Pty) Ltd" divider />
@@ -85,7 +86,7 @@ export default function SettingsScreen({ navigation }) {
         </View>
 
         {/* Rate section */}
-        <SectionHeader title="Reimbursement Rate" />
+        <SectionHeader icon="cash-outline" title="Reimbursement rate" />
         <View style={s.card}>
           <Field
             label="Rate per Kilometre (R)"
@@ -95,21 +96,24 @@ export default function SettingsScreen({ navigation }) {
             keyboardType="decimal-pad"
           />
           <View style={s.rateNote}>
+            <Ionicons name="information-circle-outline" size={16} color={theme.muted} />
             <Text style={s.rateNoteText}>
-              💡 The SARS AA rate is R {DEFAULT_RATE.toFixed(2)}/km for private vehicles. Confirm the rate with your employer before submitting claims.
+              The SARS AA rate is R {DEFAULT_RATE.toFixed(2)}/km for private vehicles. Confirm the rate with your employer before submitting claims.
             </Text>
           </View>
         </View>
 
         {/* Save button */}
         <TouchableOpacity style={[s.btnSave, saved && s.btnSaved]} onPress={save}>
-          <Text style={s.btnSaveText}>{saved ? '✓ Settings Saved' : 'Save Settings'}</Text>
+          <Ionicons name={saved ? 'checkmark-circle' : 'save-outline'} size={18} color="#fff" />
+          <Text style={s.btnSaveText}>{saved ? 'Settings saved' : 'Save settings'}</Text>
         </TouchableOpacity>
 
         {/* Demo data */}
-        <SectionHeader title="Try it out" />
+        <SectionHeader icon="flask-outline" title="Try it out" />
         <View style={s.card}>
           <View style={s.dangerRow}>
+            <View style={s.rowIcon}><MaterialCommunityIcons name="database-outline" size={20} color={theme.amber} /></View>
             <View style={{ flex: 1 }}>
               <Text style={s.rowTitle}>Load demo data</Text>
               <Text style={s.dangerSub}>Three months of sample trips and fill-ups with a sample profile</Text>
@@ -121,9 +125,10 @@ export default function SettingsScreen({ navigation }) {
         </View>
 
         {/* Danger zone */}
-        <SectionHeader title="Danger Zone" danger />
+        <SectionHeader icon="warning-outline" title="Danger zone" danger />
         <View style={[s.card, s.dangerCard]}>
           <View style={s.dangerRow}>
+            <View style={[s.rowIcon, { backgroundColor: theme.dangerSoft }]}><Ionicons name="trash-outline" size={20} color={theme.danger} /></View>
             <View style={{ flex: 1 }}>
               <Text style={s.dangerTitle}>Clear all data</Text>
               <Text style={s.dangerSub}>Permanently delete all log entries and reset your profile</Text>
@@ -141,11 +146,13 @@ export default function SettingsScreen({ navigation }) {
   );
 }
 
-function SectionHeader({ title, danger }) {
+function SectionHeader({ icon, title, danger }) {
+  const color = danger ? theme.danger : theme.muted;
   return (
-    <Text style={[s.sectionHeader, danger && { color: theme.danger }]}>
-      {title.toUpperCase()}
-    </Text>
+    <View style={s.sectionHeader}>
+      <Ionicons name={icon} size={14} color={color} />
+      <Text style={[s.sectionHeaderText, { color }]}>{title.toUpperCase()}</Text>
+    </View>
   );
 }
 
@@ -158,7 +165,7 @@ function Field({ label, value, onChangeText, placeholder, divider, ...rest }) {
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#B0A898"
+        placeholderTextColor={theme.placeholder}
         {...rest}
       />
     </View>
@@ -168,41 +175,38 @@ function Field({ label, value, onChangeText, placeholder, divider, ...rest }) {
 const s = StyleSheet.create({
   safe:    { flex: 1, backgroundColor: theme.bg },
   scroll:  { flex: 1 },
-  content: { padding: 16, paddingBottom: 40 },
+  content: { padding: 16, paddingTop: 4, paddingBottom: 40 },
 
-  sectionHeader: {
-    fontSize: 11, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase',
-    color: theme.muted, marginTop: 20, marginBottom: 8, marginLeft: 2,
-  },
+  sectionHeader:     { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 20, marginBottom: 8, marginLeft: 4 },
+  sectionHeaderText: { fontSize: 11, fontWeight: '700', letterSpacing: 1.2 },
 
-  card: {
-    backgroundColor: theme.card, borderWidth: 1, borderColor: theme.border, borderRadius: 4,
-  },
-  dangerCard: { borderColor: '#EEC0C0', borderLeftWidth: 3, borderLeftColor: theme.danger },
+  card:       { ...card },
+  dangerCard: { borderColor: '#F0CACA' },
 
   field:        { padding: 14 },
   fieldDivider: { borderTopWidth: 1, borderTopColor: theme.border },
   label:        { fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', color: theme.muted, marginBottom: 6 },
   input:        {
-    backgroundColor: theme.bg, borderWidth: 1, borderColor: theme.border,
-    borderRadius: 4, paddingHorizontal: 12, paddingVertical: 10,
-    fontSize: 15, color: theme.text,
+    backgroundColor: theme.inputBg, borderWidth: 1, borderColor: theme.border,
+    borderRadius: theme.radiusSm, paddingHorizontal: 14, paddingVertical: 11,
+    fontSize: 16, color: theme.text,
   },
 
-  rateNote:     { padding: 14, paddingTop: 0 },
-  rateNoteText: { fontSize: 12, color: theme.muted, lineHeight: 18 },
+  rateNote:     { flexDirection: 'row', alignItems: 'flex-start', gap: 6, padding: 14, paddingTop: 0 },
+  rateNoteText: { flex: 1, fontSize: 12, color: theme.muted, lineHeight: 18 },
 
-  btnSave:     { backgroundColor: theme.navy, borderRadius: 4, paddingVertical: 14, alignItems: 'center', marginTop: 16 },
+  btnSave:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: theme.navy, borderRadius: theme.radiusSm, paddingVertical: 14, marginTop: 16, ...theme.shadow },
   btnSaved:    { backgroundColor: theme.success },
-  btnSaveText: { color: '#fff', fontWeight: '700', fontSize: 15, letterSpacing: 0.3 },
+  btnSaveText: { color: '#fff', fontWeight: '700', fontSize: 15, letterSpacing: 0.2 },
 
   dangerRow:   { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
+  rowIcon:     { width: 40, height: 40, borderRadius: 20, backgroundColor: theme.amberSoft, alignItems: 'center', justifyContent: 'center' },
   rowTitle:    { fontSize: 14, fontWeight: '700', color: theme.navy },
-  btnOutline:  { borderWidth: 1.5, borderColor: theme.navy, borderRadius: 4, paddingHorizontal: 16, paddingVertical: 9 },
-  btnOutlineText: { color: theme.navy, fontWeight: '700', fontSize: 13 },
   dangerTitle: { fontSize: 14, fontWeight: '700', color: theme.danger },
-  dangerSub:   { fontSize: 12, color: theme.muted, marginTop: 2 },
-  btnDanger:   { borderWidth: 1.5, borderColor: theme.danger, borderRadius: 4, paddingHorizontal: 16, paddingVertical: 9 },
+  dangerSub:   { fontSize: 12, color: theme.muted, marginTop: 2, lineHeight: 17 },
+  btnOutline:  { borderWidth: 1.5, borderColor: theme.navy, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 8 },
+  btnOutlineText: { color: theme.navy, fontWeight: '700', fontSize: 13 },
+  btnDanger:   { borderWidth: 1.5, borderColor: theme.danger, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 8 },
   btnDangerText: { color: theme.danger, fontWeight: '700', fontSize: 13 },
 
   version: { textAlign: 'center', fontSize: 12, color: theme.muted, marginTop: 24 },

@@ -38,7 +38,7 @@ export default function App() {
   const canWrite = useRef(false);
   latest.current = { entries, settings };
 
-  // ── Load from storage ──
+  // -- Load from storage --
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -65,7 +65,7 @@ export default function App() {
     return () => { cancelled = true; };
   }, []);
 
-  // ── Persist ──
+  // -- Persist --
   const commit = useCallback((next) => {
     const merged = { ...latest.current, ...next };
     latest.current = merged;
@@ -104,8 +104,8 @@ export default function App() {
               headerTintColor:  '#fff',
               headerTitleStyle: { fontWeight: '700', letterSpacing: 0.5 },
               tabBarActiveTintColor:   theme.amber,
-              tabBarInactiveTintColor: '#999',
-              tabBarStyle: { borderTopColor: theme.border, backgroundColor: '#fff', paddingBottom: 4 },
+              tabBarInactiveTintColor: '#9A948A',
+              tabBarStyle: { borderTopColor: theme.border, backgroundColor: '#fff', height: 64, paddingTop: 6, paddingBottom: 8 },
               tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
               tabBarIcon: ({ focused, color, size }) => {
                 const [on, off] = ICONS[route.name] || ['ellipse', 'ellipse-outline'];
