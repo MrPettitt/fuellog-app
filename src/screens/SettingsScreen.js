@@ -5,17 +5,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useApp } from '../AppContext';
 import { theme } from '../theme';
-import { num, DEFAULT_RATE } from '../utils';
-import pkg from '../../package.json';
+import { num } from '../utils';
 
 export default function SettingsScreen() {
-  const { settings, updateSettings, clearAll, loadDemo } = useApp();
+  const { settings, updateSettings, clearAll } = useApp();
 
   const [name,    setName]    = useState(settings.employeeName   || '');
   const [company, setCompany] = useState(settings.employerName   || '');
   const [vehicle, setVehicle] = useState(settings.vehicleMake    || '');
   const [reg,     setReg]     = useState(settings.vehicleReg     || '');
-  const [rate,    setRate]    = useState(String(settings.ratePerKm || DEFAULT_RATE));
+  const [rate,    setRate]    = useState(String(settings.ratePerKm || 4.28));
   const [saved,   setSaved]   = useState(false);
 
   useEffect(() => {
@@ -23,37 +22,22 @@ export default function SettingsScreen() {
     setCompany(settings.employerName || '');
     setVehicle(settings.vehicleMake  || '');
     setReg(settings.vehicleReg       || '');
-    setRate(String(settings.ratePerKm || DEFAULT_RATE));
+    setRate(String(settings.ratePerKm || 4.28));
   }, [settings]);
 
   const save = () => {
     if (!name.trim()) {
       Alert.alert('Required', 'Please enter your name.'); return;
     }
-    const r = num(rate);
-    if (!(r > 0 && r < 100)) {
-      Alert.alert('Invalid rate', 'Enter the rate per kilometre as a number, e.g. 4.28.'); return;
-    }
     updateSettings({
       employeeName:    name.trim(),
       employerName:    company.trim(),
       vehicleMake:     vehicle.trim(),
       vehicleReg:      reg.trim(),
-      ratePerKm:       r,
+      ratePerKm:       num(rate) || 4.28,
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
-  };
-
-  const confirmDemo = () => {
-    Alert.alert(
-      'Load demo data',
-      'This replaces your current entries and profile with sample data. Continue?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Load demo', onPress: loadDemo },
-      ]
-    );
   };
 
   const confirmClear = () => {
@@ -102,20 +86,6 @@ export default function SettingsScreen() {
           <Text style={s.btnSaveText}>{saved ? '✓ Settings Saved' : 'Save Settings'}</Text>
         </TouchableOpacity>
 
-        {/* Demo data */}
-        <SectionHeader title="Sample Data" />
-        <View style={s.card}>
-          <View style={s.dangerRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={s.dangerTitle}>Try with demo data</Text>
-              <Text style={s.dangerSub}>Fill the log with three months of sample trips and fuel</Text>
-            </View>
-            <TouchableOpacity style={s.btnDanger} onPress={confirmDemo}>
-              <Text style={s.btnDangerText}>Load</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
         {/* Danger zone */}
         <SectionHeader title="Danger Zone" danger />
         <View style={[s.card, s.dangerCard]}>
@@ -130,7 +100,7 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        <Text style={s.version}>FuelLog v{pkg.version} · Built for South African business travel</Text>
+        <Text style={s.version}>FuelLog v1.0 · Built for South African business travel</Text>
 
       </ScrollView>
     </SafeAreaView>

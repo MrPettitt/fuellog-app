@@ -2,7 +2,7 @@
   "expo": {
     "name": "FuelLog",
     "slug": "fuellog",
-    "version": "2.0.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "backgroundColor": "#F5F3EE",
@@ -11,15 +11,13 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.mrpettitt.fuellog",
-      "buildNumber": "2"
+      "bundleIdentifier": "com.yourcompany.fuellog"
     },
     "android": {
-      "package": "com.mrpettitt.fuellog",
+      "package": "com.yourcompany.fuellog",
       "adaptiveIcon": {
         "backgroundColor": "#0B1F3A"
-      },
-      "versionCode": 2
+      }
     }
   }
 }

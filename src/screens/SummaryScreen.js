@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
 import { useApp } from '../AppContext';
 import { theme } from '../theme';
-import { monthLabel, allMonths, defaultMonth, buildSummaryText, buildCsv, calcStats, fmtR } from '../utils';
+import { monthLabel, allMonths, defaultMonth, buildSummaryText, calcStats, fmtR } from '../utils';
 
 export default function SummaryScreen({ navigation }) {
   const { entries, settings } = useApp();
@@ -28,17 +28,6 @@ export default function SummaryScreen({ navigation }) {
       await Share.share({
         message: summary,
         title:   `FuelLog - ${monthLabel(month)}`,
-      });
-    } catch (err) {
-      Alert.alert('Share Failed', err.message);
-    }
-  };
-
-  const shareCsv = async () => {
-    try {
-      await Share.share({
-        message: buildCsv(entries, month),
-        title:   `FuelLog ${month}.csv`,
       });
     } catch (err) {
       Alert.alert('Share Failed', err.message);
@@ -86,9 +75,6 @@ export default function SummaryScreen({ navigation }) {
             <Text style={s.btnCopyText}>📋  Copy</Text>
           </TouchableOpacity>
         </View>
-        <TouchableOpacity style={s.btnCsv} onPress={shareCsv}>
-          <Text style={s.btnCopyText}>📊  Share as CSV (spreadsheet)</Text>
-        </TouchableOpacity>
 
         {/* Report preview */}
         <View style={s.card}>
@@ -163,7 +149,6 @@ const s = StyleSheet.create({
   btnShare:     { flex: 1, backgroundColor: theme.navy, borderRadius: 4, paddingVertical: 13, alignItems: 'center' },
   btnShareText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   btnCopy:      { flex: 0.6, backgroundColor: theme.card, borderWidth: 1.5, borderColor: theme.border, borderRadius: 4, paddingVertical: 13, alignItems: 'center' },
-  btnCsv:  { borderWidth: 1.5, borderColor: theme.border, borderRadius: 4, paddingVertical: 13, alignItems: 'center', backgroundColor: theme.card, marginBottom: 14 },
   btnCopyText:  { color: theme.navy, fontWeight: '700', fontSize: 14 },
 
   card:       { backgroundColor: theme.card, borderWidth: 1, borderColor: theme.border, borderRadius: 4 },
