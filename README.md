@@ -111,4 +111,4 @@ The default rate is **R 4.28/km** (SARS AA rate for private vehicles under 1600c
 
 ## License
 
-MIT - feel free to customise for your company.
+Released under the [MIT License](LICENSE). Feel free to customise it for your company.
