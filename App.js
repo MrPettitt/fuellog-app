@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { View, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import DashboardScreen  from './src/screens/DashboardScreen';
@@ -13,11 +12,10 @@ import MonthlyLogScreen from './src/screens/MonthlyLogScreen';
 import SummaryScreen    from './src/screens/SummaryScreen';
 import SettingsScreen   from './src/screens/SettingsScreen';
 
-import { dummyEntries, defaultSettings, blankSettings } from './src/utils';
+import { demoEntries, demoSettings, blankSettings } from './src/utils';
+import { loadData, saveData } from './src/storage';
 import { theme } from './src/theme';
 import { AppContext } from './src/AppContext';
-
-// ─── Global Context ───────────────────────────────────────────────────────────
 
 const Tab = createBottomTabNavigator();
 
@@ -31,60 +29,66 @@ const ICONS = {
 
 export default function App() {
   const [entries,  setEntries]  = useState([]);
-  const [settings, setSettings] = useState(defaultSettings);
+  const [settings, setSettings] = useState(blankSettings);
   const [loaded,   setLoaded]   = useState(false);
+
+  // Latest values for writes, so two quick actions never save stale state.
+  const latest = useRef({ entries: [], settings: blankSettings });
+  // Turned off when storage could not be read, so we never overwrite data we failed to load.
+  const canSave = useRef(true);
 
   // ── Load from storage ──
   useEffect(() => {
     (async () => {
-      try {
-        const raw = await AsyncStorage.getItem('fuellog_v1');
-        if (raw) {
-          const d = JSON.parse(raw);
-          setEntries(Array.isArray(d.entries) ? d.entries : dummyEntries);
-          setSettings(s => ({ ...s, ...(d.settings || {}) }));
-        } else {
-          // First launch - seed with demo data
-          setEntries(dummyEntries);
-          setSettings(defaultSettings);
-          await AsyncStorage.setItem('fuellog_v1', JSON.stringify({ entries: dummyEntries, settings: defaultSettings }));
-        }
-      } catch (_) {
-        setEntries(dummyEntries);
-        setSettings(defaultSettings);
+      const res = await loadData();
+      if (res.status === 'ok') {
+        latest.current = { entries: res.entries, settings: { ...blankSettings, ...res.settings } };
+      } else if (res.status === 'unavailable') {
+        canSave.current = false;
+        Alert.alert(
+          'Storage unavailable',
+          'FuelLog could not read its saved data, so nothing will be saved this session. Your existing data has not been changed. Restart the app to try again.',
+        );
+      } else if (res.status === 'corrupt') {
+        Alert.alert(
+          'Saved data could not be read',
+          'A copy of the unreadable data was kept on this device. You are starting with an empty log.',
+        );
       }
+      // 'empty' = first run: start blank (demo data is opt-in from Settings).
+      setEntries(latest.current.entries);
+      setSettings(latest.current.settings);
       setLoaded(true);
     })();
   }, []);
 
-  // ── Persist helpers ──
-  const persist = async (e, s) => {
-    try { await AsyncStorage.setItem('fuellog_v1', JSON.stringify({ entries: e, settings: s })); } catch (_) {}
-  };
+  const commit = useCallback((nextEntries, nextSettings) => {
+    latest.current = { entries: nextEntries, settings: nextSettings };
+    setEntries(nextEntries);
+    setSettings(nextSettings);
+    if (!canSave.current) return;
+    saveData(nextEntries, nextSettings).then(ok => {
+      if (!ok) Alert.alert('Could not save', 'Your last change was not saved to this device. Check free storage and try again.');
+    });
+  }, []);
 
-  const addEntry = (entry) => {
-    const next = [...entries, entry];
-    setEntries(next);
-    persist(next, settings);
-  };
+  const addEntry = (entry) => commit([...latest.current.entries, entry], latest.current.settings);
 
-  const deleteEntry = (id) => {
-    const next = entries.filter(e => e.id !== id);
-    setEntries(next);
-    persist(next, settings);
-  };
+  const updateEntry = (entry) => commit(
+    latest.current.entries.map(e => (e.id === entry.id ? entry : e)),
+    latest.current.settings,
+  );
 
-  const updateSettings = (s) => {
-    setSettings(s);
-    persist(entries, s);
-  };
+  const deleteEntry = (id) => commit(
+    latest.current.entries.filter(e => e.id !== id),
+    latest.current.settings,
+  );
 
-  const clearAll = () => {
-    setEntries([]);
-    const s = { ...blankSettings };
-    setSettings(s);
-    persist([], s);
-  };
+  const updateSettings = (s) => commit(latest.current.entries, s);
+
+  const loadDemo = () => commit(demoEntries, demoSettings);
+
+  const clearAll = () => commit([], { ...blankSettings });
 
   if (!loaded) {
     return (
@@ -95,7 +99,7 @@ export default function App() {
   }
 
   return (
-    <AppContext.Provider value={{ entries, settings, addEntry, deleteEntry, updateSettings, clearAll }}>
+    <AppContext.Provider value={{ entries, settings, addEntry, updateEntry, deleteEntry, updateSettings, loadDemo, clearAll }}>
       <SafeAreaProvider>
         <StatusBar style="light" />
         <NavigationContainer>

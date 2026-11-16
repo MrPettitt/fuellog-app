@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet,
   Alert, Modal,
@@ -14,43 +14,63 @@ const CATEGORIES = [
 ];
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
-export default function AddEntryScreen({ navigation }) {
+export default function AddEntryScreen({ navigation, route }) {
   const [tab, setTab] = useState('trip'); // 'trip' | 'fuel'
+  const editing = route?.params?.entry || null;
+  const kind    = editing ? editing.type : tab;
+
+  // Leaving the screen ends an edit, so "Add Entry" always opens blank next time.
+  useEffect(() => {
+    const unsub = navigation.addListener('blur', () => navigation.setParams({ entry: undefined }));
+    return unsub;
+  }, [navigation]);
 
   return (
     <SafeAreaView style={s.safe} edges={['bottom']}>
-      {/* Segment */}
-      <View style={s.segWrap}>
-        <View style={s.seg}>
-          <TouchableOpacity style={[s.segBtn, tab === 'trip' && s.segBtnActive]} onPress={() => setTab('trip')}>
-            <Text style={[s.segText, tab === 'trip' && s.segTextActive]}>🚗  Business Trip</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[s.segBtn, tab === 'fuel' && s.segBtnActive]} onPress={() => setTab('fuel')}>
-            <Text style={[s.segText, tab === 'fuel' && s.segTextActive]}>⛽  Fuel Fill-up</Text>
-          </TouchableOpacity>
+      {editing ? (
+        <View style={s.editBanner}>
+          <Text style={s.editBannerText}>Editing {editing.type === 'trip' ? 'trip' : 'fuel fill-up'}</Text>
         </View>
-      </View>
+      ) : (
+        <View style={s.segWrap}>
+          <View style={s.seg}>
+            <TouchableOpacity style={[s.segBtn, tab === 'trip' && s.segBtnActive]} onPress={() => setTab('trip')}>
+              <Text style={[s.segText, tab === 'trip' && s.segTextActive]}>🚗  Business Trip</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[s.segBtn, tab === 'fuel' && s.segBtnActive]} onPress={() => setTab('fuel')}>
+              <Text style={[s.segText, tab === 'fuel' && s.segTextActive]}>⛽  Fuel Fill-up</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
-      {tab === 'trip'
-        ? <TripForm   navigation={navigation} />
-        : <FuelForm   navigation={navigation} />
+      {kind === 'trip'
+        ? <TripForm key={editing ? editing.id : 'new-trip'} navigation={navigation} editing={editing} />
+        : <FuelForm key={editing ? editing.id : 'new-fuel'} navigation={navigation} editing={editing} />
       }
     </SafeAreaView>
   );
 }
 
-// ─── Trip Form ────────────────────────────────────────────────────────────────
-function TripForm({ navigation }) {
-  const { addEntry } = useApp();
+// Shared by both forms: leave edit mode and go back to the log.
+function finishEdit(navigation) {
+  navigation.setParams({ entry: undefined });
+  navigation.navigate('Log');
+}
 
-  const [date,     setDate]     = useState(today());
-  const [purpose,  setPurpose]  = useState('');
-  const [manual,   setManual]   = useState(false);
-  const [odoStart, setOdoStart] = useState('');
-  const [odoEnd,   setOdoEnd]   = useState('');
-  const [manualKm, setManualKm] = useState('');
-  const [category, setCategory] = useState(CATEGORIES[0]);
-  const [notes,    setNotes]    = useState('');
+// ─── Trip Form ────────────────────────────────────────────────────────────────
+function TripForm({ navigation, editing }) {
+  const { addEntry, updateEntry } = useApp();
+  const e0 = editing;
+
+  const [date,     setDate]     = useState(e0 ? e0.date : today());
+  const [purpose,  setPurpose]  = useState(e0 ? e0.purpose || '' : '');
+  const [manual,   setManual]   = useState(e0 ? !!e0.manualKm : false);
+  const [odoStart, setOdoStart] = useState(e0 && !e0.manualKm && e0.startOdo != null ? String(e0.startOdo) : '');
+  const [odoEnd,   setOdoEnd]   = useState(e0 && !e0.manualKm && e0.endOdo != null ? String(e0.endOdo) : '');
+  const [manualKm, setManualKm] = useState(e0 && e0.manualKm ? String(e0.km) : '');
+  const [category, setCategory] = useState(e0 && e0.category ? e0.category : CATEGORIES[0]);
+  const [notes,    setNotes]    = useState(e0 ? e0.notes || '' : '');
   const [catModal, setCatModal] = useState(false);
 
   const derivedKm = manual
@@ -74,14 +94,21 @@ function TripForm({ navigation }) {
       Alert.alert('Required', 'Enter a valid distance.'); return;
     }
 
-    addEntry({
-      id: uid(), type: 'trip',
+    const entry = {
+      id: editing ? editing.id : uid(), type: 'trip',
       date, purpose: purpose.trim(), category, notes: notes.trim(),
       km: derivedKm, manualKm: manual,
       startOdo: manual ? null : num(odoStart),
       endOdo:   manual ? null : num(odoEnd),
-    });
+    };
 
+    if (editing) {
+      updateEntry(entry);
+      finishEdit(navigation);
+      return;
+    }
+
+    addEntry(entry);
     Alert.alert('✓ Saved', 'Trip has been logged.', [
       { text: 'Add Another', onPress: () => {} },
       { text: 'Dashboard',   onPress: () => navigation.navigate('Dashboard'), style: 'cancel' },
@@ -152,11 +179,11 @@ function TripForm({ navigation }) {
       </ScrollView>
 
       <View style={s.footer}>
-        <TouchableOpacity style={s.btnOutline} onPress={() => navigation.navigate('Dashboard')}>
+        <TouchableOpacity style={s.btnOutline} onPress={() => (editing ? finishEdit(navigation) : navigation.navigate('Dashboard'))}>
           <Text style={s.btnOutlineText}>Cancel</Text>
         </TouchableOpacity>
         <TouchableOpacity style={s.btnPrimary} onPress={save}>
-          <Text style={s.btnPrimaryText}>Save Trip</Text>
+          <Text style={s.btnPrimaryText}>{editing ? 'Save Changes' : 'Save Trip'}</Text>
         </TouchableOpacity>
       </View>
 
@@ -180,14 +207,15 @@ function TripForm({ navigation }) {
 }
 
 // ─── Fuel Form ────────────────────────────────────────
-function FuelForm({ navigation }) {
-  const { addEntry } = useApp();
+function FuelForm({ navigation, editing }) {
+  const { addEntry, updateEntry } = useApp();
+  const e0 = editing;
 
-  const [date,      setDate]      = useState(today());
-  const [station,   setStation]   = useState('');
-  const [litres,    setLitres]    = useState('');
-  const [ppl,       setPpl]       = useState('');
-  const [total,     setTotal]     = useState('');
+  const [date,      setDate]      = useState(e0 ? e0.date : today());
+  const [station,   setStation]   = useState(e0 ? e0.station || '' : '');
+  const [litres,    setLitres]    = useState(e0 ? String(e0.litres) : '');
+  const [ppl,       setPpl]       = useState(e0 ? String(+(+e0.pricePerLitre).toFixed(3)) : '');
+  const [total,     setTotal]     = useState(e0 ? (+e0.totalCost).toFixed(2) : '');
 
   // Auto-calculate total
   const handleLitres = (v) => {
@@ -218,13 +246,21 @@ function FuelForm({ navigation }) {
     if (!(finalTotal > 0)) {
       Alert.alert('Required', 'Enter price per litre or total cost.'); return;
     }
-    addEntry({
-      id: uid(), type: 'fuel',
+    const entry = {
+      id: editing ? editing.id : uid(), type: 'fuel',
       date, station: station.trim(),
       litres:        num(litres),
       pricePerLitre: num(ppl) || finalTotal / num(litres),
       totalCost:     finalTotal,
-    });
+    };
+
+    if (editing) {
+      updateEntry(entry);
+      finishEdit(navigation);
+      return;
+    }
+
+    addEntry(entry);
     Alert.alert('✓ Saved', 'Fuel fill-up has been logged.', [
       { text: 'Add Another', onPress: () => {} },
       { text: 'Dashboard',   onPress: () => navigation.navigate('Dashboard'), style: 'cancel' },
@@ -272,11 +308,11 @@ function FuelForm({ navigation }) {
       </ScrollView>
 
       <View style={s.footer}>
-        <TouchableOpacity style={s.btnOutline} onPress={() => navigation.navigate('Dashboard')}>
+        <TouchableOpacity style={s.btnOutline} onPress={() => (editing ? finishEdit(navigation) : navigation.navigate('Dashboard'))}>
           <Text style={s.btnOutlineText}>Cancel</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[s.btnPrimary, { backgroundColor: theme.amber }]} onPress={save}>
-          <Text style={s.btnPrimaryText}>Save Fill-up</Text>
+          <Text style={s.btnPrimaryText}>{editing ? 'Save Changes' : 'Save Fill-up'}</Text>
         </TouchableOpacity>
       </View>
     </>
@@ -305,6 +341,9 @@ const s = StyleSheet.create({
   segBtnActive: { backgroundColor: theme.card, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 3, elevation: 2 },
   segText: { fontSize: 14, fontWeight: '600', color: theme.muted },
   segTextActive: { color: theme.navy, fontWeight: '700' },
+
+  editBanner:     { backgroundColor: theme.card, borderBottomWidth: 1, borderBottomColor: theme.border, paddingVertical: 14, paddingHorizontal: 16 },
+  editBannerText: { fontSize: 14, fontWeight: '700', color: theme.navy },
 
   formGroup: { marginBottom: 14 },
   label:     { fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', color: theme.muted, marginBottom: 5 },

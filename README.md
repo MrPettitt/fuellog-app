@@ -7,18 +7,21 @@ A cross-platform iOS & Android app built with React Native (Expo) for employees 
 ## Features
 
 - 🚗 **Trip Logging** - Odometer readings (start/end) or manual km entry
+- ✏️ **Edit entries** - Fix a typo in any trip or fill-up without deleting it
 - ⛽ **Fuel Fill-ups** - Litres, price per litre, auto-calculated total
 - 📊 **Dashboard** - Monthly overview with km, trips, fuel spend & reimbursement
 - 📋 **Monthly Log** - Full entry history by month
 - 📤 **Summary Report** - Formatted reimbursement report to share/copy to employer
-- 💾 **Persistent storage** - All data saved locally on the device
+- 📊 **CSV export** - Share the month as a spreadsheet-ready CSV
+- 💾 **Persistent storage** - All data saved locally on the device, with protection against overwriting data it cannot read
+- 🧪 **Demo data on request** - The app starts empty; load sample data from Settings to try it out
 - 🇿🇦 **South African defaults** - SARS AA rate (R 4.28/km), ZAR formatting, SA date format
 
 ---
 
 ## Screenshots
 
-Captured on an Android 14 emulator running the demo data.
+Captured on an Android 14 emulator running the demo data (Settings → Load demo data).
 
 | Dashboard | New Entry | Monthly Log |
 | :---: | :---: | :---: |
@@ -62,17 +65,15 @@ Then scan the QR code with:
 
 ## Building for Production
 
+Builds use [EAS Build](https://docs.expo.dev/build/introduction/). The app identifiers in `app.json` (`com.mrpettitt.fuellog`) are the ones to change if you publish under your own name.
+
 ### Android (APK/AAB)
 ```bash
-npx expo build:android
-# or with EAS Build:
 npx eas build --platform android
 ```
 
 ### iOS (IPA)
 ```bash
-npx expo build:ios
-# or with EAS Build:
 npx eas build --platform ios
 ```
 
@@ -87,15 +88,17 @@ fuellog-app/
 ├── App.js                       # Root - navigation + global context
 ├── app.json                     # Expo config
 ├── package.json
-├── __tests__/                   # Jest unit tests for utils
+├── __tests__/                   # Jest unit tests (utils, storage)
+├── CHANGELOG.md
 ├── .github/workflows/ci.yml     # CI: tests + Android/iOS bundle
 └── src/
     ├── AppContext.js            # Shared app state context
     ├── theme.js                 # Design tokens (colours, etc.)
-    ├── utils.js                 # Helpers, formatters, dummy data
+    ├── utils.js                 # Helpers, formatters, CSV export, demo data
+    ├── storage.js               # Safe load/save of the saved data
     └── screens/
         ├── DashboardScreen.js   # Home stats & recent entries
-        ├── AddEntryScreen.js    # Trip / fuel entry form
+        ├── AddEntryScreen.js    # Trip / fuel entry form (also used to edit)
         ├── MonthlyLogScreen.js  # Full monthly entry list
         ├── SummaryScreen.js     # Shareable reimbursement report
         └── SettingsScreen.js    # Profile and reimbursement rate

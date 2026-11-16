@@ -9,7 +9,7 @@ import {
   calcStats, monthLabel, allMonths, monthEntries, defaultMonth, fmtDate, fmtR,
 } from '../utils';
 
-export default function MonthlyLogScreen() {
+export default function MonthlyLogScreen({ navigation }) {
   const { entries, settings, deleteEntry } = useApp();
   const [picked,     setPicked]     = useState(null);   // null = follow latest month with data
   const month = picked ?? defaultMonth(entries);
@@ -64,6 +64,7 @@ export default function MonthlyLogScreen() {
                 key={e.id}
                 entry={e}
                 last={i === es.length - 1}
+                onEdit={() => navigation.navigate('Add Entry', { entry: e })}
                 onDelete={() => confirmDelete(e.id, e.type === 'trip' ? (e.purpose || 'Trip') : (e.station || 'Fill-up'))}
               />
             ))}
@@ -105,7 +106,7 @@ function StripItem({ label, value, green }) {
   );
 }
 
-function EntryBlock({ entry: e, last, onDelete }) {
+function EntryBlock({ entry: e, last, onEdit, onDelete }) {
   const isTrip = e.type === 'trip';
   return (
     <View style={[s.entry, last && { borderBottomWidth: 0 }]}>
@@ -118,9 +119,16 @@ function EntryBlock({ entry: e, last, onDelete }) {
           <Text style={s.entryTitle} numberOfLines={1}>
             {isTrip ? (e.purpose || 'Business Trip') : (e.station || 'Fill-up')}
           </Text>
-          <TouchableOpacity onPress={onDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Text style={s.deleteBtn}>✕</Text>
-          </TouchableOpacity>
+          <View style={s.actions}>
+            <TouchableOpacity onPress={onEdit} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityRole="button" accessibilityLabel="Edit entry">
+              <Text style={s.editBtn}>Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={onDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityRole="button" accessibilityLabel="Delete entry">
+              <Text style={s.deleteBtn}>✕</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={s.entryMeta}>
@@ -179,6 +187,8 @@ const s = StyleSheet.create({
   entryBody:   { flex: 1 },
   entryTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 },
   entryTitle:  { flex: 1, fontSize: 14, fontWeight: '700', color: theme.text, paddingRight: 8 },
+  actions:     { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  editBtn:     { fontSize: 12, color: theme.navy, fontWeight: '700' },
   deleteBtn:   { fontSize: 14, color: theme.muted, fontWeight: '700' },
 
   entryMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },

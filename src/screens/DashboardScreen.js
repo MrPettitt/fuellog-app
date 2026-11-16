@@ -5,7 +5,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useApp } from '../AppContext';
 import { theme } from '../theme';
-import { calcStats, monthLabel, allMonths, defaultMonth, fmtDate, fmtR } from '../utils';
+import { calcStats, monthLabel, allMonths, defaultMonth, fmtDate, fmtR, DEFAULT_RATE } from '../utils';
 
 export default function DashboardScreen({ navigation }) {
   const { entries, settings } = useApp();
@@ -39,7 +39,7 @@ export default function DashboardScreen({ navigation }) {
           <StatCard label="Business KM"    value={st.km.toFixed(0)}   sub="kilometres"           accent={theme.amber} />
           <StatCard label="Trips"          value={String(st.trips)}   sub="business trips"       accent={theme.amber} />
           <StatCard label="Fuel Spend"     value={fmtR(st.fuel)}      sub={`${st.fuels} fill-up${st.fuels === 1 ? '' : 's'}`} accent={theme.amber} compact />
-          <StatCard label="Reimbursement"  value={fmtR(st.reimburse)} sub={`@ R${settings.ratePerKm}/km`} accent={theme.success} valueColor={theme.success} compact />
+          <StatCard label="Reimbursement"  value={fmtR(st.reimburse)} sub={`@ R${(+settings.ratePerKm || DEFAULT_RATE).toFixed(2)}/km`} accent={theme.success} valueColor={theme.success} compact />
         </View>
 
         {/* Recent entries */}
