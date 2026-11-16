@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator, Alert } from 'react-native';
+import { View, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import DashboardScreen  from './src/screens/DashboardScreen';
@@ -14,7 +14,7 @@ import SettingsScreen   from './src/screens/SettingsScreen';
 
 import { demoEntries, demoSettings, blankSettings } from './src/utils';
 import { loadData, saveData } from './src/storage';
-import { theme } from './src/theme';
+import { colors } from './src/theme';
 import { AppContext } from './src/AppContext';
 
 const Tab = createBottomTabNavigator();
@@ -87,8 +87,8 @@ export default function App() {
 
   if (!loaded) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.navy }}>
-        <ActivityIndicator color={theme.amber} size="large" />
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.text }}>
+        <ActivityIndicator color={colors.accent} size="large" />
       </View>
     );
   }
@@ -96,17 +96,18 @@ export default function App() {
   return (
     <AppContext.Provider value={{ entries, settings, addEntry, updateEntry, deleteEntry, updateSettings, clearAll, loadDemoData }}>
       <SafeAreaProvider>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         <NavigationContainer>
           <Tab.Navigator
             screenOptions={({ route }) => ({
-              headerStyle:      { backgroundColor: theme.navy },
-              headerTintColor:  '#fff',
-              headerTitleStyle: { fontWeight: '700', letterSpacing: 0.5 },
-              tabBarActiveTintColor:   theme.amber,
-              tabBarInactiveTintColor: '#9A948A',
-              tabBarStyle: { borderTopColor: theme.border, backgroundColor: '#fff', height: 64, paddingTop: 6, paddingBottom: 8 },
-              tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+              headerStyle:       { backgroundColor: colors.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.separator },
+              headerShadowVisible: false,
+              headerTintColor:   colors.text,
+              headerTitleStyle:  { fontWeight: '600', fontSize: 17 },
+              tabBarActiveTintColor:   colors.text,
+              tabBarInactiveTintColor: colors.text3,
+              tabBarStyle: { borderTopColor: colors.separator, backgroundColor: colors.surface, height: 62, paddingTop: 6, paddingBottom: 8 },
+              tabBarLabelStyle: { fontSize: 11, fontWeight: '500' },
               tabBarIcon: ({ focused, color, size }) => {
                 const [on, off] = ICONS[route.name] || ['ellipse', 'ellipse-outline'];
                 return <Ionicons name={focused ? on : off} size={size} color={color} />;

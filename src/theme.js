@@ -1,63 +1,33 @@
-// Design tokens shared by every screen.
-export const theme = {
-  // Brand
-  navy:       '#0B1F3A',
-  navyLight:  '#1A3358',
-  amber:      '#C8860A',
-  amberLight: '#E49B18',
-  amberSoft:  '#FFF4DD',
+// Design tokens. Deliberately restrained: one accent, hairline separators,
+// grouped white surfaces on a light grey background, system fonts.
+import { Platform } from 'react-native';
 
-  // Surfaces
-  bg:         '#F3F1EB',
-  card:       '#FFFFFF',
-  border:     '#E4E0D6',
-  inputBg:    '#FAF9F6',
-
-  // Text
-  text:       '#0B1F3A',
-  muted:      '#7A7060',
-  placeholder:'#B0A898',
-  onNavy:     '#FFFFFF',
-  onNavyMuted:'rgba(255,255,255,0.72)',
-
-  // Semantic
-  success:    '#1E7A4A',
-  successSoft:'#E6F4EC',
-  danger:     '#B83232',
-  dangerSoft: '#FBEAEA',
-  info:       '#1A56DB',
-  infoSoft:   '#EBF2FF',
-  tripBg:     '#E8EFFE',
-  tripText:   '#2151B8',
-  fuelBg:     '#FEF3C7',
-  fuelText:   '#92400E',
-
-  // Shape
-  radius:     14,
-  radiusSm:   10,
-
-  // Elevation (iOS shadow + Android elevation)
-  shadow: {
-    shadowColor: '#0B1F3A',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
-  },
-  shadowStrong: {
-    shadowColor: '#0B1F3A',
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 5,
-  },
+export const colors = {
+  bg:        '#F2F2F4',   // screen background
+  surface:   '#FFFFFF',   // grouped sections
+  separator: '#E5E5EA',
+  text:      '#0B1F3A',   // navy, used for headings and primary buttons
+  text2:     '#6B6F76',
+  text3:     '#A2A6AD',
+  accent:    '#B8770A',   // amber, used sparingly for links and the active tab
+  money:     '#1B7A46',
+  danger:    '#C0392B',
+  trip:      '#2E5BBA',
+  fuel:      '#C8860A',
+  field:     '#F7F7F8',
 };
 
-// Base card used across screens.
-export const card = {
-  backgroundColor: theme.card,
-  borderRadius: theme.radius,
-  borderWidth: 1,
-  borderColor: theme.border,
-  ...theme.shadow,
+export const radius = 12;
+
+export const font = {
+  // Numbers line up in columns.
+  tabular: { fontVariant: ['tabular-nums'] },
+  mono:    { fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' },
+};
+
+// Kept for compatibility with older imports.
+export const theme = {
+  navy: colors.text, amber: colors.accent, bg: colors.bg, card: colors.surface,
+  border: colors.separator, text: colors.text, muted: colors.text2,
+  success: colors.money, danger: colors.danger, placeholder: colors.text3,
 };

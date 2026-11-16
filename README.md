@@ -12,7 +12,7 @@ A cross-platform iOS & Android app built with React Native (Expo) for employees 
 
 - 🚗 **Trip Logging** - Odometer readings (start/end) or manual km entry
 - ⛽ **Fuel Fill-ups** - Litres, price per litre, auto-calculated total
-- ✏️ **Edit entries** - Fix any trip or fill-up from the Monthly Log without deleting it
+- ✏️ **Edit entries** - Tap any trip or fill-up to change or delete it
 - 📊 **Dashboard** - Monthly overview with km, trips, fuel spend & reimbursement
 - 📋 **Monthly Log** - Full entry history by month
 - 📤 **Summary Report** - Formatted reimbursement report to share/copy to employer
@@ -29,11 +29,11 @@ Captured at phone size (412 × 915) with the demo data loaded from **Settings �
 
 | Dashboard | New Entry | Monthly Log |
 | :---: | :---: | :---: |
-| <img src="docs/screenshots/dashboard.png" width="240" alt="Dashboard: monthly totals and recent entries" /> | <img src="docs/screenshots/new-entry.png" width="240" alt="New Entry: trip form with odometer readings" /> | <img src="docs/screenshots/monthly-log.png" width="240" alt="Monthly Log: entries with Edit and delete actions" /> |
+| <img src="docs/screenshots/dashboard.png" width="240" alt="Dashboard: reimbursement total, monthly figures and recent entries" /> | <img src="docs/screenshots/new-entry.png" width="240" alt="New Entry: trip form with odometer readings" /> | <img src="docs/screenshots/monthly-log.png" width="240" alt="Monthly Log: trips and fuel for the month, tap to edit" /> |
 
 | Summary | Settings |
 | :---: | :---: |
-| <img src="docs/screenshots/summary.png" width="240" alt="Summary: share, copy or export the report as CSV" /> | <img src="docs/screenshots/settings.png" width="240" alt="Settings: profile, rate and demo data" /> |
+| <img src="docs/screenshots/summary.png" width="240" alt="Summary: claim figures, share, copy or export as CSV" /> | <img src="docs/screenshots/settings.png" width="240" alt="Settings: profile, rate and data" /> |
 
 ---
 
@@ -75,6 +75,8 @@ The release is created automatically by the **Release** workflow when a commit o
 2. Add a `## x.y.z - YYYY-MM-DD` section to the top of `CHANGELOG.md`.
 3. Merge to `main`. The workflow runs the tests, tags `vx.y.z`, creates the GitHub Release, then builds the APK and attaches it.
 
+An older commit can be released by hand: open the Release workflow, choose **Run workflow**, and give the version and the branch or commit to release.
+
 The APK is signed with the standard debug keystore, which is fine for side-loading and testing. Store builds should go through EAS Build (below) with your own signing keys.
 
 ---
@@ -114,7 +116,7 @@ fuellog-app/
 |   `-- release.yml              # Tag + GitHub Release + APK on version bump
 `-- src/
     |-- AppContext.js            # Shared app state context
-    |-- components/              # MonthPicker (header chip + sheet), EntryBadge
+    |-- components/              # Shared UI: groups, rows, fields, buttons, sheets
     |-- storage.js               # Safe load/save of the saved data
     |-- theme.js                 # Design tokens (colours, etc.)
     |-- utils.js                 # Helpers, formatters, CSV export, demo data

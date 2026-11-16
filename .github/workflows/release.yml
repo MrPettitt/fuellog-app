@@ -1,19 +1,29 @@
-# Publishes a GitHub Release whenever the version in package.json changes on main.
+# Publishes GitHub Releases.
 #
-#   1. Bump "version" in package.json and app.json (and expo.android.versionCode /
-#      expo.ios.buildNumber), add a "## x.y.z - date" section to CHANGELOG.md.
-#   2. Merge to main.
-#   3. This workflow runs the tests, tags vX.Y.Z, creates the release with the
-#      CHANGELOG section as its notes, then builds an Android APK and attaches it.
+# Automatic: on every push to main, if package.json's version has no vX.Y.Z tag yet,
+# the tests run, the tag and release are created with that version's CHANGELOG.md
+# section as notes, and an Android APK is built and attached.
 #
-# Nothing happens when the tag for the current version already exists, so ordinary
-# commits to main are safe. "Run workflow" (workflow_dispatch) can re-run it by hand.
+# Manual ("Run workflow"): pass a version and a branch or commit to release that
+# commit as vVERSION. Notes are taken from CHANGELOG.md on the branch the workflow
+# runs from, so older commits can be released with current notes.
+#
+# To ship a new version: bump "version" in package.json and app.json (and
+# expo.android.versionCode / expo.ios.buildNumber), add a "## x.y.z - date" section
+# to CHANGELOG.md, merge to main.
 name: Release
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release, e.g. 1.0.0 (default: package.json on the target)'
+        required: false
+      target:
+        description: 'Branch or commit to release (default: this branch)'
+        required: false
 
 permissions:
   contents: write
@@ -24,34 +34,52 @@ concurrency:
 
 jobs:
   check:
-    name: Check for a new version
+    name: Resolve version and target
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.v.outputs.version }}
+      sha: ${{ steps.v.outputs.sha }}
       publish: ${{ steps.v.outputs.publish }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.target || github.sha }}
       - id: v
         run: |
-          VERSION="$(node -p "require('./package.json').version")"
+          VERSION="${{ inputs.version }}"
+          if [ -z "$VERSION" ]; then VERSION="$(node -p "require('./package.json').version")"; fi
+          VERSION="${VERSION#v}"
+          SHA="$(git rev-parse HEAD)"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
           if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" > /dev/null; then
             echo "v$VERSION is already released; nothing to do."
             echo "publish=false" >> "$GITHUB_OUTPUT"
           else
-            echo "v$VERSION is not released yet."
+            echo "Releasing v$VERSION from $SHA."
             echo "publish=true" >> "$GITHUB_OUTPUT"
           fi
 
   release:
-    name: Test and publish release
+    name: Test and publish
     needs: check
     if: needs.check.outputs.publish == 'true'
     runs-on: ubuntu-latest
     env:
       VERSION: ${{ needs.check.outputs.version }}
+      SHA: ${{ needs.check.outputs.sha }}
     steps:
-      - uses: actions/checkout@v5
+      - name: Check out the commit being released
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.check.outputs.sha }}
+      - name: Check out CHANGELOG.md from the workflow branch
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          path: notes-src
+          sparse-checkout: CHANGELOG.md
+          sparse-checkout-cone-mode: false
       - uses: actions/setup-node@v5
         with:
           node-version: 22
@@ -59,9 +87,9 @@ jobs:
       - run: npm ci
       - name: Unit tests
         run: npm test
-      - name: Release notes from CHANGELOG.md
+      - name: Release notes
         run: |
-          awk -v v="$VERSION" '/^## /{p = ($2 == v)} p' CHANGELOG.md | tail -n +2 > notes.md
+          awk -v v="$VERSION" '/^## /{p = ($2 == v)} p' notes-src/CHANGELOG.md | tail -n +2 > notes.md
           if [ ! -s notes.md ]; then echo "Release v$VERSION." > notes.md; fi
           cat notes.md
       - name: Create tag and GitHub Release
@@ -69,7 +97,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "v$VERSION" \
-            --target "$GITHUB_SHA" \
+            --target "$SHA" \
             --title "FuelLog v$VERSION" \
             --notes-file notes.md
 
@@ -82,6 +110,8 @@ jobs:
       CI: '1'
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.check.outputs.sha }}
       - uses: actions/setup-node@v5
         with:
           node-version: 22
